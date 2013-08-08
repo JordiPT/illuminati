@@ -22,7 +22,7 @@ module Illuminati
 
     def self.set_defaults config
       config['casava_path']         ||= '/n/ngs/tools/casava/CASAVA-1.8.2/bin'
-      config['email_list']          ||= ['jfv@stowers.org']
+      config['email_list']          ||= ['mcm@stowers.org']
       config['qc_path']             ||= '/n/ngs/qcdata'
       config['admin_path']          ||= '/n/ngs/runs'
       config['logs_path']           ||= '/n/ngs/runs/log'
