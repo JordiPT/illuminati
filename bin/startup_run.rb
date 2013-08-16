@@ -62,7 +62,9 @@ module Illuminati
   class Starter
     def self.write_admin_script flowcell_id, options = {}
       @options = options
-      flowcell_id = flowcell_id.upcase
+
+		#trying without upcase for FCID with a and b on the end.
+      #flowcell_id = flowcell_id.upcase
 
       flowcell = FlowcellPaths.new flowcell_id
       puts flowcell.base_dir
