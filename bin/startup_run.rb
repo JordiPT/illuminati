@@ -180,7 +180,7 @@ if __FILE__ == $0
     o.banner = "Usage: startup_run.rb [Flowcell Id] [options]"
     o.on('-d', '--dual', 'Flowcell is dual indexed') {|b| options[:type] = :dual}
     o.on( '--no-align', 'Disable the align step') {|b| options[:align] = false}
-    o.on( '--no-postrun', 'Disable the align step') {|b| options[:postrun] = false}
+    o.on( '--no-postrun', 'Disable the postrun step') {|b| options[:postrun] = false}
     o.on( '--no-sample_sheet', 'Disable the samplesheet step') {|b| options[:create_sample_sheet] = false}
     o.on( '--no-config', 'Disable the config step') {|b| options[:create_config] = false}
     o.on("--lanes 1,2,3,4,5,6,7,8" , Array, 'Specify which lanes should be run') {|b| options[:lanes] = b}
