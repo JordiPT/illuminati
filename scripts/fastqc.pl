@@ -6,6 +6,8 @@
 use strict;
 use warnings;
 
+use Data::Dumper;
+use JSON;
 use FindBin;
 use lib $FindBin::Bin;
 
@@ -15,7 +17,7 @@ my $thumbscript = "$FindBin::Bin/thumbs.sh";
 
 my $names_file = "";
 my $output_dir = ".";
-my ($verbose, $help,  $skip, $auto_out) ;
+my ($verbose, $help,  $skip, $auto_out, $fcid) ;
 my $files_pattern = "*{sequence,qseq}*.{txt,qc,fq}";
 my $result = GetOptions ("name=s" => \$names_file, #string
 	                     "verbose" => \$verbose, #bool
@@ -23,6 +25,7 @@ my $result = GetOptions ("name=s" => \$names_file, #string
                        "auto-out" => \$auto_out, #bool
                        "out=s" => \$output_dir, #string
                        "help" => \$help,
+						     "flowcell=s" =>\$fcid, #string
                        "files=s" =>\$files_pattern); 
 usage() if $help;
 
@@ -39,6 +42,8 @@ sub usage
 	print "			to the current directory.\n";
 	print "\n";
 	print "--skip - Do not run fastqc on the sequence data, only generate reports from a previous run\n";
+	print "\n";
+	print "--flowcell FCID - the flowcell id. Used to get sample names from lims\n";
 	print "\n";
 	print "--files FILE_PATTERN - The file pattern to run fastqc on. Defaults to *sequence / *qseq files\n";
 	print "\n";
@@ -90,7 +95,7 @@ unless( $skip ) #skip input flag will skip running fastqc
 {
 	# here we run fastqc on all files with 'sequence' in the 
 	# a more complete match might be necessary.
-	`fastqc $files_pattern -o $output_dir -t 8`;
+	#`fastqc $files_pattern -o $output_dir -t 8`;
 }
 
 #remove archives. 
@@ -164,9 +169,9 @@ foreach my $file (@files) #collecting the pass/warn/fail info for each lane.
 
 	# If we can extract the adapter sequence - and there is a match in our hash, use that 
 	my $adapter_seq = extract_adapter_sequence($file);
-	#print $adapter_seq . "\n" if $verbose; 
-	my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || "unknown";
-	#print $sample_name . "\n" if $verbose;
+	print "adapter seq: " . $adapter_seq . "\n" if $verbose; 
+	my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq) || "unknown";
+	print "sam name: " . $sample_name . "\n" if $verbose;
 	
 	#print the row (lane)
 	print HTML "<tr><td><font size=2><a href=\"$firstpart"."_fastqc/fastqc_report.html\">$file</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>$sample_name</font>&nbsp;&nbsp;</td></td>$pfs</tr>\n";
@@ -235,7 +240,7 @@ foreach my $file (@files)
 
 
    my $adapter_seq = extract_adapter_sequence($file);
-   my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || "unknown";
+   my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq) || "unknown";
 
 	print "Sample Name: " . $sample_name . "\n" if $verbose;
 
@@ -256,6 +261,35 @@ foreach my $file (@files)
 print HTML2 "</table>";
 print HTML2 "<br>";
 print HTML2 "<font size=2><a href=\"http://wiki/research/FastQC/SIMRreports\">How to interpret FastQC results</a></font>";
+
+sub get_sample_name
+{
+	my($fcid,$adapter_seq) = @_;
+	my $samname = "unknown";
+
+	print "in get_sample_name $fcid $adapter_seq\n";
+	my $result =`perl /n/ngs/tools/lims/lims_data.pl $fcid`;
+	chomp($result);
+
+	 my $json = JSON->new->allow_nonref;
+	  
+	my $perl_scalar = $json->decode($result);
+
+	my $len = scalar( keys $perl_scalar->{samples});
+	for(my $i=0; $i < $len; $i++)
+	{
+		my $index = $perl_scalar->{samples}[$i]->{indexSequences}[0];
+		if($index eq $adapter_seq)
+		{
+			$samname = $perl_scalar->{samples}[$i]->{sampleName};
+		}
+	}
+
+	print Dumper($perl_scalar->{samples}) . "\n";
+
+	return($samname);
+
+}
 
 sub extract_adapter_sequence
 {

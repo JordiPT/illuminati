@@ -57,7 +57,12 @@ module PFastqc
 
       worker_task_name = distributer.submit(WORKER_SCRIPT, {:prefix => "fastqc", :database => database, :dependency => dependency})
 
-      combiner_task_name = distributer.submit(COMBINER_SCRIPT, {:prefix => "fastqc", :dependency => worker_task_name, :args => output_directory})
+      flowcell_id = "A_FLOWCELL"
+      if self.data["flowcell_id"]
+        flowcell_id = self.data["flowcell_id"].strip
+      end
+
+      combiner_task_name = distributer.submit(COMBINER_SCRIPT, {:prefix => "fastqc", :dependency => worker_task_name, :args => "#{output_directory} #{flowcell_id}"})
 
       wait_on_task = combiner_task_name
 
@@ -74,10 +79,6 @@ module PFastqc
         puts "NO projects found!! - NOT DISTRIBUTING DATA"
       end
 
-      flowcell_id = "A_FLOWCELL"
-      if self.data["flowcell_id"]
-        flowcell_id = self.data["flowcell_id"].strip
-      end
 
       email_task_name = distributer.submit(EMAIL_SCRIPT, {:prefix => "fastqc", :dependency => wait_on_task, :args => "FASTQC #{flowcell_id}"})
       email_task_name

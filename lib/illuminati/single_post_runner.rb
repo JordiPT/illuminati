@@ -594,7 +594,7 @@ module Illuminati
       if check_exists(fastq_path)
         command = "cd #{fastq_path};"
         script = Illuminati::ScriptPaths.fastqc_script
-        command += " #{script} -v --files \"*.fastq.gz\""
+        command += " #{script} -v --flowcell {#@flowcell.paths.id#} --files \"*.fastq.gz\""
         execute command
         execute "cd #{cwd}"
       end

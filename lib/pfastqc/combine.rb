@@ -1,5 +1,7 @@
+require 'json'
 
 fastqc_directory = ARGV[0]
+fcid = ARGV[1]
 
 module PFastqc
   class Combiner
@@ -18,8 +20,10 @@ module PFastqc
 
     STATUS = {"PASS" => "tick.png", "WARN" => "warning.png", "FAIL" => "error.png"}
     attr_accessor :fastqc_directory
-    def initialize fastqc_directory
+    attr_accessor :fcid
+    def initialize fastqc_directory, fcid
       self.fastqc_directory = fastqc_directory
+      self.fcid = fcid
     end
 
     def get_fastqc_directories
@@ -60,7 +64,11 @@ module PFastqc
 
         file_name = relative_fastq_dir.gsub("_fastqc","")
 
-        output += "<tr><td><font size=2><a href=\"#{baseurl}\">#{file_name}</a></font></td><td><font size=2>#{""}</font></td>#{summary_lines.join(" ")}</tr>\n"
+		  adapter_seq = extract_adapter_seq(file_name)
+
+		  sample_name = get_sample_name(adapter_seq,fcid)
+
+        output += "<tr><td><font size=2><a href=\"#{baseurl}\">#{file_name}</a></font></td><td><font size=2>#{sample_name}</font></td>#{summary_lines.join(" ")}</tr>\n"
       end
 
       output += "</table>"
@@ -97,7 +105,11 @@ module PFastqc
 
         file_name = relative_fastq_dir.gsub("_fastqc","")
 
-        output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{""}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
+		  adapter_seq = extract_adapter_seq(file_name)
+
+		  sample_name = get_sample_name(adapter_seq,fcid)
+
+        output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{sample_name}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
       end
 
       output += "</table>"
@@ -107,6 +119,28 @@ module PFastqc
       write_file(output_path, output)
       output_path
     end
+	 
+	 def extract_adapter_seq file_name
+		 adapter_seq = ""
+		 if file_name =~ /.*_([GTAC]+)/
+			 adapter_seq = $1
+		 end
+		 adapter_seq
+	 end
+
+	 def get_sample_name adapter_seq, fcid
+		 samname = "unknown"
+		 result = `perl /n/ngs/tools/lims/lims_data.pl #{fcid}`
+		 lims_data = JSON.parse(result)
+
+		 for sample in lims_data["samples"]
+			 if adapter_seq == sample["indexSequences"][0]
+				 samname = sample["sampleName"]
+			 end
+		 end
+		 samname
+	 end
+
 
     def combine
       thumber = ThumbMaker.new(self.fastqc_directory)
@@ -157,6 +191,6 @@ module PFastqc
   end
 end
 
-combiner = PFastqc::Combiner.new(fastqc_directory)
+combiner = PFastqc::Combiner.new(fastqc_directory,fcid)
 
 combiner.combine
