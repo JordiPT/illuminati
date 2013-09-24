@@ -95,7 +95,7 @@ unless( $skip ) #skip input flag will skip running fastqc
 {
 	# here we run fastqc on all files with 'sequence' in the 
 	# a more complete match might be necessary.
-	#`fastqc $files_pattern -o $output_dir -t 8`;
+	`fastqc $files_pattern -o $output_dir -t 8`;
 }
 
 #remove archives. 
@@ -271,7 +271,7 @@ sub get_sample_name
 	my $result =`perl /n/ngs/tools/lims/lims_data.pl $fcid`;
 	chomp($result);
 
-	 my $json = JSON->new->allow_nonref;
+	my $json = JSON->new->allow_nonref;
 	  
 	my $perl_scalar = $json->decode($result);
 
@@ -286,9 +286,7 @@ sub get_sample_name
 	}
 
 	print Dumper($perl_scalar->{samples}) . "\n";
-
 	return($samname);
-
 }
 
 sub extract_adapter_sequence
