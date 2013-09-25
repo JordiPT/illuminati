@@ -66,7 +66,9 @@ module PFastqc
 
 		  adapter_seq = extract_adapter_seq(file_name)
 
-		  sample_name = get_sample_name(adapter_seq,fcid)
+		  lane_number = extract_lane_number(file_name)
+
+		  sample_name = get_sample_name(adapter_seq,fcid,lane_number)
 
         output += "<tr><td><font size=2><a href=\"#{baseurl}\">#{file_name}</a></font></td><td><font size=2>#{sample_name}</font></td>#{summary_lines.join(" ")}</tr>\n"
       end
@@ -107,7 +109,9 @@ module PFastqc
 
 		  adapter_seq = extract_adapter_seq(file_name)
 
-		  sample_name = get_sample_name(adapter_seq,fcid)
+		  lane_number = extract_lane_number(file_name)
+
+		  sample_name = get_sample_name(adapter_seq,fcid,lane_number)
 
         output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{sample_name}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
       end
@@ -122,25 +126,42 @@ module PFastqc
 	 
 	 def extract_adapter_seq file_name
 		 adapter_seq = ""
-		 if file_name =~ /.*_([GTAC]+)/
+		 if file_name =~ /.*_([GTAC-]+)/
+			 adapter_seq = $1
+		 elsif file_name =~ /.*_(NoIndex)/
 			 adapter_seq = $1
 		 end
 		 adapter_seq
 	 end
 
-	 def get_sample_name adapter_seq, fcid
+	 def extract_lane_number file_name
+		 lane_number = ""
+		 if file_name =~ /s_(\d)_.*/
+			 lane_number = $1
+		 end
+		 lane_number
+	 end
+
+	 def get_sample_name adapter_seq, fcid, lane_number
 		 samname = "unknown"
 		 result = `perl /n/ngs/tools/lims/lims_data.pl #{fcid}`
 		 lims_data = JSON.parse(result)
 
 		 for sample in lims_data["samples"]
-			 if adapter_seq == sample["indexSequences"][0]
+			 if adapter_seq == "NoIndex" and sample["laneID"]==lane_number
+				 samname = sample["sampleName"]
+			 elsif adapter_seq == "NoIndex" and sample["laneID"] != lane_number
+				 #do nothing
+			 elsif sample["indexSequences"].nil? or sample["indexSequences"].empty?
+				 #do nothing
+			 elsif adapter_seq == sample["indexSequences"][0]
+					 samname = sample["sampleName"]
+			 elsif !sample["indexSequences"][1].nil? and adapter_seq == sample["indexSequences"][0] + "-" + sample["indexSequences"][1]
 				 samname = sample["sampleName"]
 			 end
 		 end
 		 samname
 	 end
-
 
     def combine
       thumber = ThumbMaker.new(self.fastqc_directory)
