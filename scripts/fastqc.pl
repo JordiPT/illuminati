@@ -169,8 +169,9 @@ foreach my $file (@files) #collecting the pass/warn/fail info for each lane.
 
 	# If we can extract the adapter sequence - and there is a match in our hash, use that 
 	my $adapter_seq = extract_adapter_sequence($file);
+	my $lane_number = extract_lane_number($file);
 	print "adapter seq: " . $adapter_seq . "\n" if $verbose; 
-	my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq) || "unknown";
+	my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq,$lane_number) || "unknown";
 	print "sam name: " . $sample_name . "\n" if $verbose;
 	
 	#print the row (lane)
@@ -239,8 +240,9 @@ foreach my $file (@files)
 	my $row = join("",@imgs);
 
 
+	my $lane_number = extract_lane_number($file);
    my $adapter_seq = extract_adapter_sequence($file);
-   my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq) || "unknown";
+   my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq,$lane_number) || "unknown";
 
 	print "Sample Name: " . $sample_name . "\n" if $verbose;
 
@@ -262,9 +264,20 @@ print HTML2 "</table>";
 print HTML2 "<br>";
 print HTML2 "<font size=2><a href=\"http://wiki/research/FastQC/SIMRreports\">How to interpret FastQC results</a></font>";
 
+sub extract_lane_number
+{
+	my ($filename) = @_;
+	my $lane_number = "";
+	if ($filename =~ /.*_(NoIndex)/)
+	{
+		$lane_number = $1;
+	}
+	return($lane_number);
+}
+
 sub get_sample_name
 {
-	my($fcid,$adapter_seq) = @_;
+	my($fcid,$adapter_seq,$lane_number) = @_;
 	my $samname = "unknown";
 
 	print "in get_sample_name $fcid $adapter_seq\n";
@@ -279,13 +292,20 @@ sub get_sample_name
 	for(my $i=0; $i < $len; $i++)
 	{
 		my $index = $perl_scalar->{samples}[$i]->{indexSequences}[0];
-		if($index eq $adapter_seq)
+		my $dual_index = $perl_scalar->{samples}[$i]->{indexSequences}[0]."-".$perl_scalar->{samples}[$i]->{indexSequences}[1];
+		if($adapter_seq eq "NoIndex" and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
+		{
+			$samname = $perl_scalar->{samples}[$i]->{sampleName};
+		}
+		elsif($perl_scalar->{samples}[$i]->{sampleName} eq "" or !exists($perl_scalar->{samples}[$i]->{sampleName}))
+		{
+			#do nothing
+		}
+		elsif($adapter_seq eq $index or $adapter_seq eq $dual_index)
 		{
 			$samname = $perl_scalar->{samples}[$i]->{sampleName};
 		}
 	}
-
-	print Dumper($perl_scalar->{samples}) . "\n";
 	return($samname);
 }
 
