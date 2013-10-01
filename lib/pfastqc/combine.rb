@@ -154,9 +154,9 @@ module PFastqc
 				 #do nothing
 			 elsif sample["indexSequences"].nil? or sample["indexSequences"].empty?
 				 #do nothing
-			 elsif adapter_seq == sample["indexSequences"][0]
+			 elsif adapter_seq == sample["indexSequences"][0] and sample["laneID"]==lane_number
 					 samname = sample["sampleName"]
-			 elsif !sample["indexSequences"][1].nil? and adapter_seq == sample["indexSequences"][0] + "-" + sample["indexSequences"][1]
+			 elsif !sample["indexSequences"][1].nil? and adapter_seq == sample["indexSequences"][0] + "-" + sample["indexSequences"][1] and sample["laneID"]==lane_number
 				 samname = sample["sampleName"]
 			 end
 		 end

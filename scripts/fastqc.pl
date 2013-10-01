@@ -301,7 +301,7 @@ sub get_sample_name
 		{
 			#do nothing
 		}
-		elsif($adapter_seq eq $index or $adapter_seq eq $dual_index)
+		elsif(($adapter_seq eq $index or $adapter_seq eq $dual_index) and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
 		{
 			$samname = $perl_scalar->{samples}[$i]->{sampleName};
 		}
