@@ -42,7 +42,7 @@ module PFastqc
 
       output = ""
       output += "<!DOCTYPE html>\n<html><head></head><body>"
-      output += "<table cellpadding=1><tr><td></td><td><font size=2>&nbsp;&nbsp;&nbsp;sample&nbsp;&nbsp;&nbsp;</font></td>#{names_line}</tr>\n"
+      output += "<table cellpadding=1><tr><td></td><td><font size=2>&nbsp;&nbsp;&nbsp;libID&nbsp;&nbsp;&nbsp;</font></td>#{names_line}</tr>\n"
 
       fastqc_dirs.each do |fastq_dir|
         relative_fastq_dir = File.basename(fastq_dir)
@@ -68,9 +68,12 @@ module PFastqc
 
 		  lane_number = extract_lane_number(file_name)
 
-		  sample_name = get_sample_name(adapter_seq,fcid,lane_number)
+		 #sample_name = get_sample_name(adapter_seq,fcid,lane_number)
 
-        output += "<tr><td><font size=2><a href=\"#{baseurl}\">#{file_name}</a></font></td><td><font size=2>#{sample_name}</font></td>#{summary_lines.join(" ")}</tr>\n"
+		  lib_id = get_lib_id(adapter_seq,fcid,lane_number)
+
+        #output += "<tr><td><font size=2><a href=\"#{baseurl}\">#{file_name}</a></font></td><td><font size=2>#{sample_name}</font></td>#{summary_lines.join(" ")}</tr>\n"
+        output += "<tr><td><font size=2><a href=\"#{baseurl}\">#{file_name}</a></font></td><td><font size=2>#{lib_id}</font></td>#{summary_lines.join(" ")}</tr>\n"
       end
 
       output += "</table>"
@@ -89,7 +92,7 @@ module PFastqc
 
       output = ""
       output += "<!DOCTYPE html>\n<html><head></head><body>"
-      output += "<table cellpadding=1><tr><td></td><td><font size=2>&nbsp;&nbsp;&nbsp;sample&nbsp;&nbsp;&nbsp;</font></td>#{names_line}</tr>\n"
+      output += "<table cellpadding=1><tr><td></td><td><font size=2>&nbsp;&nbsp;&nbsp;libID&nbsp;&nbsp;&nbsp;</font></td>#{names_line}</tr>\n"
 
       fastqc_dirs.each do |fastq_dir|
         relative_fastq_dir = File.basename(fastq_dir)
@@ -111,9 +114,14 @@ module PFastqc
 
 		  lane_number = extract_lane_number(file_name)
 
-		  sample_name = get_sample_name(adapter_seq,fcid,lane_number)
+		  #sample_name = get_sample_name(adapter_seq,fcid,lane_number)
+		  
+		  lib_id = get_lib_id(adapter_seq,fcid,lane_number)
 
-        output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{sample_name}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
+        #output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{sample_name}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
+		  
+        output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{lib_id}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
+
       end
 
       output += "</table>"
@@ -161,6 +169,27 @@ module PFastqc
 			 end
 		 end
 		 samname
+	 end
+
+	 def get_lib_id adapter_seq, fcid, lane_number
+		 samname = "unknown"
+		 result = `perl /n/ngs/tools/lims/lims_data.pl #{fcid}`
+		 lims_data = JSON.parse(result)
+
+		 for sample in lims_data["samples"]
+			 if adapter_seq == "NoIndex" and sample["laneID"]==lane_number
+				 libid = sample["libID"]
+			 elsif adapter_seq == "NoIndex" and sample["laneID"] != lane_number
+				 #do nothing
+			 elsif sample["indexSequences"].nil? or sample["indexSequences"].empty?
+				 #do nothing
+			 elsif adapter_seq == sample["indexSequences"][0] and sample["laneID"]==lane_number
+					 lib_id = sample["libID"]
+			 elsif !sample["indexSequences"][1].nil? and adapter_seq == sample["indexSequences"][0] + "-" + sample["indexSequences"][1] and sample["laneID"]==lane_number
+				 lib_id = sample["libID"]
+			 end
+		 end
+		 lib_id
 	 end
 
     def combine

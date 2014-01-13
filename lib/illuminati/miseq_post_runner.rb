@@ -6,7 +6,9 @@ module Illuminati
     DEFAULT_STEPS = %w{setup unaligned fastqc aligned stats report}
 
     ALIGNMENT_FILE_MATCHES = ["*.bam*", "*.vcf"]
-    STATS_FILE_MATCHES = ["Alignment/ResequencingRunStatistics.xml", "Alignment/Summary.htm", "Alignment/Summary.xml"]
+    STATS_FILE_MATCHES = ["Alignment/ResequencingRunStatistics.xml", "Alignment/Summary.htm", "Alignment/Summary.xml", "Alignment/LibraryQC.html"]
+
+		 /n/ngs/data/miseq/MiSeqAnalysis/140110_M01285_0027_000000000-A66PK/Data/Intensities/BaseCalls/Alignment
 
     def initialize flowcell, options = {}
       options = {:test => false, :steps => ALL_STEPS}.merge(options)
