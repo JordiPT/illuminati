@@ -119,7 +119,8 @@ module Illuminati
       script.write command
       script.write ""
 
-      command = "#{CASAVA_PATH}/configureBclToFastq.pl --ignore-missing-stats --mismatches 1 --input-dir #{flowcell.base_calls_dir} --output-dir #{flowcell.unaligned_dir}  --flowcell-id #{flowcell.flowcell_id}"
+      command = "#{BCLTOFASTQ_PATH}/configureBclToFastq.pl --ignore-missing-stats --mismatches 1 --input-dir #{flowcell.base_calls_dir} --output-dir #{flowcell.unaligned_dir}  --flowcell-id #{flowcell.flowcell_id}"
+      #command = "#{CASAVA_PATH}/configureBclToFastq.pl --ignore-missing-stats --mismatches 1 --input-dir #{flowcell.base_calls_dir} --output-dir #{flowcell.unaligned_dir}  --flowcell-id #{flowcell.flowcell_id}"
 
       if @options[:type] == :dual
         command += " --use-bases-mask Y*,I*,I*,Y*"
@@ -132,8 +133,9 @@ module Illuminati
       script.write command
       script.write ""
 
-      # ensure casava bin path is in $PATH
+      # ensure casava bin path and bcltofastq bin is in $PATH
       command = "export PATH=#{CASAVA_PATH}:$PATH"
+      command = "export PATH=#{BCL2FASTQ_PATH}:$PATH"
       script.write command
       script.write ""
 
