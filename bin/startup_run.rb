@@ -119,7 +119,7 @@ module Illuminati
       script.write command
       script.write ""
 
-      command = "#{BCLTOFASTQ_PATH}/configureBclToFastq.pl --ignore-missing-stats --mismatches 1 --input-dir #{flowcell.base_calls_dir} --output-dir #{flowcell.unaligned_dir}  --flowcell-id #{flowcell.flowcell_id}"
+      command = "#{BCL2FASTQ_PATH}/configureBclToFastq.pl --ignore-missing-stats --mismatches 1 --input-dir #{flowcell.base_calls_dir} --output-dir #{flowcell.unaligned_dir}  --flowcell-id #{flowcell.flowcell_id}"
       #command = "#{CASAVA_PATH}/configureBclToFastq.pl --ignore-missing-stats --mismatches 1 --input-dir #{flowcell.base_calls_dir} --output-dir #{flowcell.unaligned_dir}  --flowcell-id #{flowcell.flowcell_id}"
 
       if @options[:type] == :dual

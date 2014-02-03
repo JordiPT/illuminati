@@ -6,7 +6,7 @@ module Illuminati
   # Location of CASAVA 1.8's bin directory
   CASAVA_PATH         = File.expand_path config['casava_path']
   # Location of bclTofastq bin directory
-  BCLTOFASTQ_PATH         = File.expand_path config['bcltofastq_path']
+  BCL2FASTQ_PATH         = File.expand_path config['bcl2fastq_path']
   # List emailer uses to email out messages.
   EMAIL_LIST          = config['email_list']
   # Path to put quality control files in.

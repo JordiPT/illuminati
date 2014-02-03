@@ -22,7 +22,7 @@ module Illuminati
 
     def self.set_defaults config
       config['casava_path']         ||= '/n/ngs/tools/casava/CASAVA-1.8.2/bin'
-      config['bcltofastq_path']     ||= '/n/ngs/tools/bcl2fastq/build/perl/bin'
+      config['bcl2fastq_path']     ||= '/n/ngs/tools/bcl2fastq/build/perl/bin'
       config['email_list']          ||= ['mcm@stowers.org']
       config['qc_path']             ||= '/n/ngs/qcdata'
       config['admin_path']          ||= '/n/ngs/runs'
