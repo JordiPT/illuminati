@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-LIMS_SCRIPT_PATH = File.expand_path(File.join(File.dirname(__FILE__), "lims", "lims_data.pl"))
+LIMS_SCRIPT_PATH = "/n/ngs/tools/lims/lims_data.pl"
 
 MAIL_SCRIPT_PATH = "/n/ngs/tools/pilluminati/bin/emailer.rb"
 
