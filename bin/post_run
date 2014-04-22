@@ -28,7 +28,7 @@ if __FILE__ == $0
   options[:paths] = Illuminati::Paths
 
   opts = OptionParser.new do |o|
-    o.banner = "Usage: post_runner.rb [Flowcell Id] [options]"
+    o.banner = "Usage: post_run [Flowcell Id] [options]"
     o.on('-t', '--test', 'do not write out to disk') {|b| options[:test] = b}
     o.on('-d', '--only_distribute', 'only distribute. no processing') {|b| options[:only_distribute] = true}
     o.on('-n', '--no_distribute', 'No distribute. only processing') {|b| options[:no_distribute] = true}

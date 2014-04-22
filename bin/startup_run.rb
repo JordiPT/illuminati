@@ -25,6 +25,7 @@ module Illuminati
   # Illuminati executables, so they don't need to be modifiable.
   BASE_BIN_DIR = File.expand_path(File.dirname(__FILE__))
   ALIGN_SCRIPT = File.join(BASE_BIN_DIR, "align_runner.rb")
+  POSTRUN_SCRIPT = File.join(BASE_BIN_DIR, "post_run")
   CONFIG_SCRIPT = File.join(BASE_BIN_DIR, "config_maker.rb")
   LOGGER_SCRIPT = File.join(BASE_BIN_DIR, "logger.rb")
   EMAILER_SCRIPT = File.join(BASE_BIN_DIR, "emailer.rb")
@@ -153,8 +154,17 @@ module Illuminati
           align_options = @options[:postrun] ? "" : "--no-postrun"
           align_command = "#{ALIGN_SCRIPT} #{flowcell.flowcell_id} #{align_options} > run_align.out 2>&1"
           command += "  \"#{align_command}\""
-        end
+		  else
+			 if !@options[:postrun]
+				 postrun_options = "--no-postrun"
+			 else
+				 postrun_options = "-s unaligned,undetermined,fastqc,stats,report,lims_upload"
+			 end
 
+          postrun_command = "#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} #{postrun_options} > run_postrun.out 2>&1"
+          command += "  \"#{postrun_command}\""
+
+        end
         script.write command
       end
 
@@ -181,7 +191,7 @@ if __FILE__ == $0
   opts = OptionParser.new do |o|
     o.banner = "Usage: startup_run.rb [Flowcell Id] [options]"
     o.on('-d', '--dual', 'Flowcell is dual indexed') {|b| options[:type] = :dual}
-    o.on( '--no-align', 'Disable the align step') {|b| options[:align] = false}
+    o.on( '--no-align', 'Disable the align step, do post_run with non-alignment steps') {|b| options[:align] = false}
     o.on( '--no-postrun', 'Disable the postrun step') {|b| options[:postrun] = false}
     o.on( '--no-sample_sheet', 'Disable the samplesheet step') {|b| options[:create_sample_sheet] = false}
     o.on( '--no-config', 'Disable the config step') {|b| options[:create_config] = false}
