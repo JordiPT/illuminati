@@ -18,7 +18,7 @@ my $thumbscript = "$FindBin::Bin/thumbs.sh";
 my $names_file = "";
 my $output_dir = ".";
 my ($verbose, $help,  $skip, $auto_out, $fcid) ;
-my $files_pattern = "*{sequence,qseq}*.{txt,qc,fq}";
+my $files_pattern = "*{sequence,qseq,fastq}*.{txt,qc,fq,gz}";
 my $result = GetOptions ("name=s" => \$names_file, #string
 	                     "verbose" => \$verbose, #bool
                        "skip" => \$skip, #bool
@@ -280,33 +280,40 @@ sub get_sample_name
 	my($fcid,$adapter_seq,$lane_number) = @_;
 	my $samname = "unknown";
 
-	print "in get_sample_name $fcid $adapter_seq\n";
-	my $result =`perl /n/ngs/tools/lims/lims_data.pl $fcid`;
-	chomp($result);
-
-	my $json = JSON->new->allow_nonref;
-	  
-	my $perl_scalar = $json->decode($result);
-
-	my $len = scalar( keys $perl_scalar->{samples});
-	for(my $i=0; $i < $len; $i++)
+	if($fcid)
 	{
-		my $index = $perl_scalar->{samples}[$i]->{indexSequences}[0];
-		my $dual_index = $perl_scalar->{samples}[$i]->{indexSequences}[0]."-".$perl_scalar->{samples}[$i]->{indexSequences}[1];
-		if($adapter_seq eq "NoIndex" and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
+		print "in get_sample_name $fcid $adapter_seq\n";
+		my $result =`perl /n/ngs/tools/lims/lims_data.pl $fcid`;
+		chomp($result);
+
+		my $json = JSON->new->allow_nonref;
+		  
+		my $perl_scalar = $json->decode($result);
+
+		my $len = scalar( keys $perl_scalar->{samples});
+		for(my $i=0; $i < $len; $i++)
 		{
-			$samname = $perl_scalar->{samples}[$i]->{sampleName};
+			my $index = $perl_scalar->{samples}[$i]->{indexSequences}[0];
+			my $dual_index = $perl_scalar->{samples}[$i]->{indexSequences}[0]."-".$perl_scalar->{samples}[$i]->{indexSequences}[1];
+			if($adapter_seq eq "NoIndex" and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
+			{
+				$samname = $perl_scalar->{samples}[$i]->{sampleName};
+			}
+			elsif($perl_scalar->{samples}[$i]->{sampleName} eq "" or !exists($perl_scalar->{samples}[$i]->{sampleName}))
+			{
+				#do nothing
+			}
+			elsif(($adapter_seq eq $index or $adapter_seq eq $dual_index) and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
+			{
+				$samname = $perl_scalar->{samples}[$i]->{sampleName};
+			}
 		}
-		elsif($perl_scalar->{samples}[$i]->{sampleName} eq "" or !exists($perl_scalar->{samples}[$i]->{sampleName}))
-		{
-			#do nothing
-		}
-		elsif(($adapter_seq eq $index or $adapter_seq eq $dual_index) and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
-		{
-			$samname = $perl_scalar->{samples}[$i]->{sampleName};
-		}
+		return($samname);
 	}
-	return($samname);
+	else
+	{
+		return("unknown");
+	}
 }
 
 sub extract_adapter_sequence
