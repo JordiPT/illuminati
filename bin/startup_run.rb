@@ -19,7 +19,9 @@ $:.unshift(File.join(File.dirname(__FILE__), "..", "lib"))
 
 require 'optparse'
 require 'illuminati'
+require 'illuminati/nextseq_runner'
 
+puts $LOAD_PATH
 
 module Illuminati
   # Illuminati executables, so they don't need to be modifiable.
@@ -177,6 +179,7 @@ if __FILE__ == $0
   options[:create_sample_sheet] = true
   options[:create_config] = true
   options[:sample_sheet] = "SampleSheet.csv"
+  options[:nextseq] = false
 
   opts = OptionParser.new do |o|
     o.banner = "Usage: startup_run.rb [Flowcell Id] [options]"
@@ -188,6 +191,7 @@ if __FILE__ == $0
     o.on("--lanes 1,2,3,4,5,6,7,8" , Array, 'Specify which lanes should be run') {|b| options[:lanes] = b}
     o.on('--sample_sheet SampleSheet.csv', String, 'Specify local samplesheet.csv name') {|b| options[:sample_sheet] = b}
     o.on('-y', '--yaml YAML_FILE', String, "Yaml configuration file that can be used to load options.","Command line options will trump yaml options") {|b| options.merge!(Hash[YAML::load(open(b)).map {|k,v| [k.to_sym, v]}]) }
+    o.on('--nextseq', 'Flowcell is from a NextSeq Instrument') {|b| options[:nextseq] = true}
     o.on('-h', '--help', 'Displays help screen, then exits') {puts o; exit}
   end
 
@@ -202,5 +206,19 @@ if __FILE__ == $0
     puts "ERROR: no flow cell ID provided"
     exit
   end
-  Illuminati::Starter::write_admin_script flowcell_id, options
+  
+  # check for next seq, using lims api
+  # if next seq, run next seq pipeline
+  if options[:nextseq]
+    nx = Illuminati::NextSeqRunner.new flowcell_id, options
+    nx.run_nextseq_pipeline
+  else
+    # test for next seq
+    nx = Illuminati::NextSeqRunner.new flowcell_id, options
+    if nx.nextseq?
+      nx.run_nextseq_pipeline
+    else
+      Illuminati::Starter::write_admin_script flowcell_id, options
+    end
+  end
 end

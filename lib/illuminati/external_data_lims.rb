@@ -26,7 +26,33 @@ module Illuminati
       end
       data
     end
-
+    
+    # Replacement for external perl script.
+    # Internal interface to LIMS system. 
+    # Using an external ruby script 
+    #
+    # == Returns:
+    #
+    
+    def data_for2 flowcell_id, query="samples"
+      script = "~/dev/illuminati/scripts/lims_fc_info.rb"
+      lims_results = %x[#{script} #{query} #{flowcell_id}]
+      lims_results.force_encoding("iso-8859-1")
+      data = JSON.parse(lims_results)
+      if data.empty? and query == "samples"
+        data = {"samples" => []}
+      else
+        if query == "samples"
+          d_samples = {}
+          d_samples["samples"] = data.collect{|d| d["samples"] }.flatten
+          data = d_samples
+        else
+          data = data.each{|d| d.update({"status"=> nil}) }
+        end
+      end
+      data
+    end
+    
     #
     # This method returns an array of hashes describing each sample in the flowcell
     # with the ID of flowcell_id.
@@ -46,7 +72,7 @@ module Illuminati
     # }
     #
     def sample_data_for flowcell_id
-      lims_data = data_for flowcell_id
+      lims_data = data_for2 flowcell_id
       sample_datas = []
       # need to maintain protocol for control lane.
       previous_protocol = nil

@@ -22,7 +22,10 @@ module Illuminati
 
     def self.set_defaults config
       config['casava_path']         ||= '/n/ngs/tools/casava/CASAVA-1.8.2/bin'
-      config['bcl2fastq_path']     ||= '/n/ngs/tools/bcl2fastq/build/perl/bin'
+      config['bcl2fastq_path']      ||= '/n/ngs/tools/bcl2fastq/build/perl/bin'
+      config['bcl2fastq2']          ||= '/n/ngs/tools/bcl2fastq2/current/bin/bcl2fastq'
+      config['bowtie2']             ||= '/n/local/stage/bowtie2/current/bowtie2'
+      config['bowtie2_proc']        ||= '4'
       config['email_list']          ||= ['mcm@stowers.org']
       config['qc_path']             ||= '/n/ngs/qcdata'
       config['admin_path']          ||= '/n/ngs/runs'
@@ -30,6 +33,8 @@ module Illuminati
       config['flowcell_path_base']  ||= '/n/ngs/data'
       config['outsource_path_base'] ||= '/n/ngs/data/outsource'
       config['basecalls_path']      ||= File.join('Data', 'Intensities', 'BaseCalls')
+      config['nextseq_unaligned']   ||= 'Unaligned'
+      config['nextseq_aligned']     ||= File.join('Aligned', 'bowtie2')
       config['fastq_combine_path']  ||= 'all'
       config['fastq_undetermined_combine_path'] ||= 'undetermined'
       config['eland_combine_path']  ||= 'all'
@@ -40,6 +45,7 @@ module Illuminati
       config['email_server']        ||= 'localhost:25'
       config['web_dir_root']        ||= 'http://bioinfo/n/'
       config['genomes_root']        ||= '/n/ngs/igenome'
+      config['bowtie2_indexes']     ||= '/n/ngs/igenome/bowtie2'
       config['num_leading_dirs_to_strip'] ||= '1'
       config['num_processes']       ||= 24
       config
