@@ -79,13 +79,13 @@ module Illuminati
         #flowcell = NextSeqFlowcellPaths.new flowcell_id
         puts flowcell.base_dir
         
-        #script = ScriptWriter.new flowcell.script_path
-        
+        # debug
         #temp_flowcell_script_path = "/Users/srm/tmp/#{flowcell.id}_tmp.sh"
         #bcl2fastq2_script_dir     = "/Users/srm/tmp/" #flowcell.base_dir
         #bowtie2_script_dir         = "/Users/srm/tmp/bowtie2/"
+        #script = ScriptWriter.new temp_flowcell_script_path
         
-        script = ScriptWriter.new temp_flowcell_script_path
+        script = ScriptWriter.new flowcell.script_path
         
         script.write "#!/bin/bash"
         script.write "# #{flowcell_id}"
