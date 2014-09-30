@@ -81,9 +81,9 @@ module Illuminati
         
         #script = ScriptWriter.new flowcell.script_path
         
-        temp_flowcell_script_path = "/Users/srm/tmp/#{flowcell.id}_tmp.sh"
-        bcl2fastq2_script_dir     = "/Users/srm/tmp/" #flowcell.base_dir
-        bowtie2_script_dir         = "/Users/srm/tmp/bowtie2/"
+        #temp_flowcell_script_path = "/Users/srm/tmp/#{flowcell.id}_tmp.sh"
+        #bcl2fastq2_script_dir     = "/Users/srm/tmp/" #flowcell.base_dir
+        #bowtie2_script_dir         = "/Users/srm/tmp/bowtie2/"
         
         script = ScriptWriter.new temp_flowcell_script_path
         
@@ -105,7 +105,8 @@ module Illuminati
         #~/dev/illuminati/scripts/lims_fc_info.rb flowcell flowcell_id
         # "#{ScriptPaths::lims_info} #{flowcell_id}"
       
-        vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=>"/Users/srm/tmp/"}
+        #vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=>"/Users/srm/tmp/"}
+        vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> ADMIN_PATH}
         
         bcl2fastq2_jobname = "nextseq_bcl2fastq2"
         
