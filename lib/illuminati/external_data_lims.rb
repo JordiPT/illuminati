@@ -1,5 +1,6 @@
 require 'json'
 require 'illuminati/external_data_base'
+#require 'illuminati/constants'
 
 module Illuminati
   class ExternalDataLims < ExternalDataBase
@@ -35,7 +36,8 @@ module Illuminati
     #
     
     def data_for2 flowcell_id, query="samples"
-      script = "~/dev/illuminati/scripts/lims_fc_info.rb"
+      #script = "~/dev/illuminati/scripts/lims_fc_info.rb"
+      script = ScriptPaths.lims_fc_info
       lims_results = %x[#{script} #{query} #{flowcell_id}]
       lims_results.force_encoding("iso-8859-1")
       data = JSON.parse(lims_results)

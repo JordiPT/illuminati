@@ -101,7 +101,6 @@ module Illuminati
         results = %x[#{command}]
         results.split("\n").each {|line| script.write "# #{line}" }
 
-
         #~/dev/illuminati/scripts/lims_fc_info.rb flowcell flowcell_id
         # "#{ScriptPaths::lims_info} #{flowcell_id}"
       
@@ -117,6 +116,9 @@ module Illuminati
         # create Sample sheet
         nxss = NextSeqSampleSheet.new vars, fc_sample_data
         
+        bcl2fastq2_script_dir = flowcell.base_dir
+        
+        bowtie2_script_dir = File.join(flowcell.base_dir, NEXTSEQ_ALIGNED)        
         basecalls_dir = File.join(flowcell.base_dir, BASECALLS_PATH) 
         unaligned_dir = File.join(flowcell.base_dir, NEXTSEQ_UNALIGNED)
         
