@@ -105,7 +105,7 @@ module Illuminati
         # "#{ScriptPaths::lims_info} #{flowcell_id}"
       
         #vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=>"/Users/srm/tmp/"}
-        vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> ADMIN_PATH}
+        vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir}
         
         bcl2fastq2_jobname = "nextseq_bcl2fastq2"
         
