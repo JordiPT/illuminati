@@ -57,6 +57,7 @@ module Illuminati
   
   BOWTIE2           = config['bowtie2']
   BOWTIE2_PROC      = config['bowtie2_proc']
+  BOWTIE2_SGE_PROC  = config['bowtie2_sge_proc']
   BOWTIE2_INDEXES   = config['bowtie2_indexes']
   
 end
