@@ -51,7 +51,7 @@ module Illuminati
   NUM_LEADING_DIRS_TO_STRIP  = config['num_leading_dirs_to_strip']
   
   BCL2FASTQ2_PATH   = File.expand_path config['bcl2fastq2']
-  BCL2FASTQ2_PROC   = 6
+  BCL2FASTQ2_PROC   = 8
   NEXTSEQ_UNALIGNED = config['nextseq_unaligned']
   NEXTSEQ_ALIGNED   = config['nextseq_aligned']
   

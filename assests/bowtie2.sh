@@ -1,6 +1,6 @@
 #!/bin/bash
 #$ -N ${JOB_NAME}
-#$ -V -j y -pe by_node ${SGE_PROC}
+#$ -V -j y -pe orte ${SGE_PROC}
 #$ -cwd -b y
 
 export BOWTIE2_INDEXES=${BOWTIE2_INDEXES}

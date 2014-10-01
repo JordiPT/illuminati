@@ -14,6 +14,10 @@ def yellow(text); colorize(text, 33); end
 def cyan(text); colorize(text, 36); end
 
 module Illuminati
+  
+  BASE_BIN_DIR = File.expand_path(File.dirname(__FILE__))
+  LOGGER_SCRIPT = File.join(BASE_BIN_DIR, "logger.rb")
+  EMAILER_SCRIPT = File.join(BASE_BIN_DIR, "emailer.rb")
 
   ## Testing 
   ## class NextSeqFlowcellPaths < FlowcellPaths
@@ -85,6 +89,9 @@ module Illuminati
         #bowtie2_script_dir         = "/Users/srm/tmp/bowtie2/"
         #script = ScriptWriter.new temp_flowcell_script_path
         
+        #vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=>"/Users/srm/tmp/"}
+        vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir}
+        
         script = ScriptWriter.new flowcell.script_path
         
         script.write "#!/bin/bash"
@@ -103,9 +110,6 @@ module Illuminati
 
         #~/dev/illuminati/scripts/lims_fc_info.rb flowcell flowcell_id
         # "#{ScriptPaths::lims_info} #{flowcell_id}"
-      
-        #vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=>"/Users/srm/tmp/"}
-        vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir}
         
         bcl2fastq2_jobname = "nextseq_bcl2fastq2"
         
@@ -154,7 +158,9 @@ module Illuminati
           script.write ""
           
           #TODO: send email?
-          
+          command = "#{EMAILER_SCRIPT} \"starting bcl2fastq2 #{flowcell_id}\""
+          script.write command
+          script.write ""   
         end
         
         if not options[:skip_fastqc]
@@ -216,17 +222,15 @@ module Illuminati
             fastq_files = fq[:fastq]            
             # build a bowtie script for each 'lane'
             for lane_fq in fastq_files
-              sge_proc    = BOWTIE2_PROC.to_i
+              sge_proc    = BOWTIE2_SGE_PROC.to_i
               fastq_gunzip = "-%d <(gunzip -c %s%s)"
               if lane_fq.length == 2
                 vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane_fq[1]],
                              :fastq2=>fastq_gunzip % [2, unaligned_relative, lane_fq[2]]})
-                sge_proc += 2
                 fq1 = lane_fq[1]
                 fq2 = lane_fq[2]
               else
                 vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane_fq[1]], :fastq2=>""})
-                sge_proc += 1
                 fq1 = lane_fq[1]
                 fq2 = " "
               end
@@ -244,7 +248,7 @@ module Illuminati
               bowtie2_script_name = root + "_bowtie2.sh"
               bowtie2_script_full = File.join(bowtie2_script_dir, bowtie2_script_name)
             
-              vars.update({:genome=>fq[:genome],:bamfile=>bamfile, :sge_proc=>sge_proc, 
+              vars.update({:genome=>fq[:genome],:bamfile=>bamfile, :sge_proc=>sge_proc,
                            :output_err_log=>output_err_log, :output_log=>output_log, :flagstat_log=>flagstat_log,
                            :bamstats_output=>bamstats_output, :bowtie2_indexes=>BOWTIE2_INDEXES})
             
@@ -288,6 +292,10 @@ module Illuminati
           if not options[:skip_bcl2fastq2]
             bcl2fastq2_hol_jid = "-hold_jid #{bcl2fastq2_jobname}"
           end
+          
+          command = "#{EMAILER_SCRIPT} \"starting bowtie2  #{flowcell_id}\""
+          script.write command
+          script.write ""
           
           # write qsub bowtie2 commands
           bowtie_qsub = "qsub  bcl2fast2_hold_jid #{bowtie2_array_script_full}"

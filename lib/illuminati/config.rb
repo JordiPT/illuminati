@@ -25,7 +25,8 @@ module Illuminati
       config['bcl2fastq_path']      ||= '/n/ngs/tools/bcl2fastq/build/perl/bin'
       config['bcl2fastq2']          ||= '/n/ngs/tools/bcl2fastq2/current/bin/bcl2fastq'
       config['bowtie2']             ||= '/n/local/stage/bowtie2/current/bowtie2'
-      config['bowtie2_proc']        ||= '4'
+      config['bowtie2_sge_proc']    ||= 8
+      config['bowtie2_proc']        ||= 6
       config['email_list']          ||= ['mcm@stowers.org']
       config['qc_path']             ||= '/n/ngs/qcdata'
       config['admin_path']          ||= '/n/ngs/runs'
