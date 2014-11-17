@@ -240,7 +240,7 @@ module Illuminati
               
               root            = lane_fq[1].gsub(/_R1_001\.fastq\.gz/,"")
               bamfile         = root + ".bam"
-              bamstats_output = root + "_bamstats"
+              bamstats_output = root + "_bamstats.txt"
               output_err_log  = root + ".err"
               output_log      = root + ".log"
               flagstat_log    = root + "_flagstat.log"
@@ -249,11 +249,11 @@ module Illuminati
               bowtie2_script_full = File.join(bowtie2_script_dir, bowtie2_script_name)
             
               vars.update({:genome=>fq[:genome],:bamfile=>bamfile, :sge_proc=>sge_proc,
-                           :output_err_log=>output_err_log, :output_log=>output_log, :flagstat_log=>flagstat_log,
+                           :output_err_log=>output_err_log, :flagstat_log=>flagstat_log,
                            :bamstats_output=>bamstats_output, :bowtie2_indexes=>BOWTIE2_INDEXES})
             
               required_keys = [:job_name,:sge_proc,:genome,:bowtie2,:bowtie2_proc,:fastq1,:fastq2,
-                               :bamfile,:output_err_log,:output_log,:bamstats_output]
+                               :bamfile,:output_err_log,:bamstats_output]
               
               bowtie2_command = generate_script vars, required_keys, bowtie2_script
             
@@ -297,8 +297,11 @@ module Illuminati
           script.write command
           script.write ""
           
+          script.write "cd #{unaligned_dir}"
+          script.write ""
+          
           # write qsub bowtie2 commands
-          bowtie_qsub = "qsub  bcl2fast2_hold_jid #{bowtie2_array_script_full}"
+          bowtie_qsub = "qsub  #{bcl2fast2_hold_jid} #{bowtie2_array_script_full}"
           script.write bowtie_qsub
           
           

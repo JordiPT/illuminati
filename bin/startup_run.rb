@@ -192,6 +192,8 @@ if __FILE__ == $0
     o.on('--sample_sheet SampleSheet.csv', String, 'Specify local samplesheet.csv name') {|b| options[:sample_sheet] = b}
     o.on('-y', '--yaml YAML_FILE', String, "Yaml configuration file that can be used to load options.","Command line options will trump yaml options") {|b| options.merge!(Hash[YAML::load(open(b)).map {|k,v| [k.to_sym, v]}]) }
     o.on('--nextseq', 'Flowcell is from a NextSeq Instrument') {|b| options[:nextseq] = true}
+    o.on('--no-bcl2fastq2', 'Disable bcl2fastq2 step. Only applies to NextSeq') {|b| options[:skip_bcl2fastq2] = true}
+    o.on('--no-fastqc', 'Disable fastqc step. Only applies to NextSeq') {|b| options[:skip_fastqc] = true}
     o.on('-h', '--help', 'Displays help screen, then exits') {puts o; exit}
   end
 

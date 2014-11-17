@@ -10,8 +10,7 @@ cd ${OUTPUT_DIR}
 
 ${BOWTIE2} -p ${BOWTIE2_PROC} \
       ${GENOME} \
-      ${FASTQ1} ${FASTQ2} | samtools view -bS \
-      -o ${BAMFILE} - 2> ${OUTPUT_ERR_LOG} > ${OUTPUT_LOG}  
+      ${FASTQ1} ${FASTQ2} 2> ${OUTPUT_ERR_LOG} | samtools view -bS -o ${BAMFILE} -
 
 # run bam stats upon completion
 bam_stats -o ${BAMSTATS_OUTPUT} ${BAMFILE} 
