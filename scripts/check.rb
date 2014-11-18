@@ -48,7 +48,7 @@ def check_barcodes flowcell_data
 		end
 
 		if sample['indexType'] == "Single Custom"
-			puts red('indexType is single custom. Pipeline doesn\'t really deal with this yet. Create custom SampleSheet.csv to run pipeline.')
+			puts red('indexType is single custom. Pipeline doesn\'t really deal with this yet. Create custom SampleSheet.csv to run pipeline or add Indexes to lims and update external_data_lims.rb with the new type.')
 		end
 	end
 
@@ -91,11 +91,23 @@ def check_genomes flowcell_data
 	rtn
 end
 
+def check_machine flowcell_data
+	rtn = true
+	missing_lanes = []
+	flowcell_data['samples'].each do |sample|
+		if sample['readLength'] =~ /^N/
+			puts red("Nextseq run. Do startup_run.rb --nextseq.")
+		end
+	end
+	rtn
+end
+
 def check_lims flowcell_id
   rtn = true
   flowcell_data = json_data_for(flowcell_id)
   barcodes = check_barcodes(flowcell_data)
   genomes = check_genomes(flowcell_data)
+  machine = check_machine(flowcell_data)
 
   if !barcodes
     rtn = false

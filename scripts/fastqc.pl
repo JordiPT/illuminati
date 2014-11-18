@@ -18,7 +18,7 @@ my $thumbscript = "$FindBin::Bin/thumbs.sh";
 my $names_file = "";
 my $output_dir = ".";
 my ($verbose, $help,  $skip, $auto_out, $fcid) ;
-my $files_pattern = "*{sequence,qseq,fastq}*.{txt,qc,fq,gz}";
+my $files_pattern = "*{sequence,qseq,fastq}*.{txt,fq,gz}";
 my $result = GetOptions ("name=s" => \$names_file, #string
 	                     "verbose" => \$verbose, #bool
                        "skip" => \$skip, #bool

@@ -14,7 +14,7 @@ use warnings;
 use Getopt::Long;
 
 my ($help,$flowcell,$append,$orig);
-my @files = ("config.txt","flowcell_info.yaml","Unaligned","Aligned","Sample_Report.csv","postrun_*.sh","qsub_db","lims_data.json");
+my @files = ("SampleSheet.csv","config.txt","flowcell_info.yaml","Unaligned","Aligned","Sample_Report.csv","qsub_db","lims_data.json");
 
 my $result = GetOptions ("flowcell=s" => \$flowcell, #string
                        "append=s" =>\$append, #string
