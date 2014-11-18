@@ -301,7 +301,7 @@ module Illuminati
           script.write ""
           
           # write qsub bowtie2 commands
-          bowtie_qsub = "qsub  #{bcl2fast2_hold_jid} #{bowtie2_array_script_full}"
+          bowtie_qsub = "qsub  #{bcl2fastq2_hold_jid} #{bowtie2_array_script_full}"
           script.write bowtie_qsub
           
           
