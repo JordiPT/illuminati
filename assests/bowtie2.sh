@@ -5,8 +5,12 @@
 
 export BOWTIE2_INDEXES=${BOWTIE2_INDEXES}
 
+echo `pwd`
+
 # run bowtie2 alignment
 cd ${OUTPUT_DIR}
+
+echo `pwd`
 
 ${BOWTIE2} -p ${BOWTIE2_PROC} \
       ${GENOME} \
