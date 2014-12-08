@@ -224,7 +224,7 @@ module Illuminati
             for lane_fq in fastq_files
               sge_proc    = BOWTIE2_SGE_PROC.to_i
               fastq_gunzip = "-%d <(gunzip -c %s%s)"
-              for lane in lane_fq:
+              for lane in lane_fq
                 vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane], :fastq2=>""})
                 fq1 = lane
                 fq2 = " "
