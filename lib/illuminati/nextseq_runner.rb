@@ -219,12 +219,12 @@ module Illuminati
           fastq_table = [ ['genome','fastq1','fastq2'] ]
           fastq_records.each_index do |index|
             fq          = fastq_records[index]
-            fastq_files = fq[:fastq]            
+            fastq_files = fq[:fastq]          
             # build a bowtie script for each fastq. Treat paired-end data as single-end.
             for lane_fq in fastq_files
               sge_proc    = BOWTIE2_SGE_PROC.to_i
               fastq_gunzip = "-%d <(gunzip -c %s%s)"
-              for lane in lane_fq
+              for lane in lane_fq.values
                 vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane], :fastq2=>""})
                 fq1 = lane
                 fq2 = " "
@@ -232,7 +232,7 @@ module Illuminati
                 fastq_entry = [fq[:genome], fq1, fq2] 
                 fastq_table << fastq_entry
                 
-                root            = lane_fq[1].gsub(/_001\.fastq\.gz/,"")
+                root            = lane.gsub(/_001\.fastq\.gz/,"")
                 bamfile         = root + ".bam"
                 bamstats_output = root + "_bamstats.txt"
                 output_err_log  = root + ".err"
