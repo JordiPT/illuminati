@@ -149,7 +149,7 @@ module Illuminati
             f_bcl2fastq2.puts bcl2fastq2_command
           end
           
-          # write qsub bowtie2 commands
+          # write qsub bcl2fastq2 commands
           bcl2fastq2_qsub = "qsub #{bcl2fastq2_script_full}"
           
           script.write ""
@@ -220,58 +220,48 @@ module Illuminati
           fastq_records.each_index do |index|
             fq          = fastq_records[index]
             fastq_files = fq[:fastq]            
-            # build a bowtie script for each 'lane'
+            # build a bowtie script for each fastq. Treat paired-end data as single-end.
             for lane_fq in fastq_files
               sge_proc    = BOWTIE2_SGE_PROC.to_i
               fastq_gunzip = "-%d <(gunzip -c %s%s)"
-              if lane_fq.length == 2
-                vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane_fq[1]],
-                             :fastq2=>fastq_gunzip % [2, unaligned_relative, lane_fq[2]]})
-                fq1 = lane_fq[1]
-                fq2 = lane_fq[2]
-              else
-                vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane_fq[1]], :fastq2=>""})
-                fq1 = lane_fq[1]
+              for lane in lane_fq:
+                vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane], :fastq2=>""})
+                fq1 = lane
                 fq2 = " "
-              end
-              
-              fastq_entry = [fq[:genome], fq1, fq2] 
-              fastq_table << fastq_entry
-              
-              root            = lane_fq[1].gsub(/_R1_001\.fastq\.gz/,"")
-              bamfile         = root + ".bam"
-              bamstats_output = root + "_bamstats.txt"
-              output_err_log  = root + ".err"
-              output_log      = root + ".log"
-              flagstat_log    = root + "_flagstat.log"
+                
+                fastq_entry = [fq[:genome], fq1] 
+                fastq_table << fastq_entry
+                
+                root            = lane_fq[1].gsub(/_001\.fastq\.gz/,"")
+                bamfile         = root + ".bam"
+                bamstats_output = root + "_bamstats.txt"
+                output_err_log  = root + ".err"
+                output_log      = root + ".log"
+                flagstat_log    = root + "_flagstat.log"
 
-              bowtie2_script_name = root + "_bowtie2.sh"
-              bowtie2_script_full = File.join(bowtie2_script_dir, bowtie2_script_name)
+                bowtie2_script_name = root + "_bowtie2.sh"
+                bowtie2_script_full = File.join(bowtie2_script_dir, bowtie2_script_name)
+                
+                vars.update({:genome=>fq[:genome],:bamfile=>bamfile, :sge_proc=>sge_proc,
+                             :output_err_log=>output_err_log, :flagstat_log=>flagstat_log,
+                             :bamstats_output=>bamstats_output, :bowtie2_indexes=>BOWTIE2_INDEXES})
             
-              vars.update({:genome=>fq[:genome],:bamfile=>bamfile, :sge_proc=>sge_proc,
-                           :output_err_log=>output_err_log, :flagstat_log=>flagstat_log,
-                           :bamstats_output=>bamstats_output, :bowtie2_indexes=>BOWTIE2_INDEXES})
-            
-              required_keys = [:job_name,:sge_proc,:genome,:bowtie2,:bowtie2_proc,:fastq1,:fastq2,
-                               :bamfile,:output_err_log,:bamstats_output]
+                required_keys = [:job_name,:sge_proc,:genome,:bowtie2,:bowtie2_proc,:fastq1,:fastq2,
+                                 :bamfile,:output_err_log,:bamstats_output]
               
-              bowtie2_command = generate_script vars, required_keys, bowtie2_script
+                bowtie2_command = generate_script vars, required_keys, bowtie2_script
             
-              Dir.chdir(bowtie2_script_dir)
-              File.open(bowtie2_script_full, 'w') do |f_bowtie2|  
-                f_bowtie2.puts bowtie2_command
-              end
+                Dir.chdir(bowtie2_script_dir)
+                File.open(bowtie2_script_full, 'w') do |f_bowtie2|  
+                  f_bowtie2.puts bowtie2_command
+                end
               
-              # modify for array
-              bowtie2_jobs_count += 1
-              
-              # write qsub bowtie2 commands
-              #bowtie_qsub = "qsub -hold_jid #{bcl2fastq2_jobname} #{bowtie2_script_full}"
-            
-              #script.write bowtie_qsub
+                # modify for array
+                bowtie2_jobs_count += 1
+                
+              end # per fastq bowtie
             end # end lane
-            
-          end # end fastq_record
+          end # end fastq_record   
           
           format_table fastq_table
           
