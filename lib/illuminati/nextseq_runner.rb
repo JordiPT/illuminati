@@ -223,9 +223,9 @@ module Illuminati
             # build a bowtie script for each fastq. Treat paired-end data as single-end.
             for lane_fq in fastq_files
               sge_proc    = BOWTIE2_SGE_PROC.to_i
-              fastq_gunzip = "-%d <(gunzip -c %s%s)"
+              fastq_gunzip = "<(gunzip -c %s%s)"
               for lane in lane_fq.values
-                vars.update({:fastq1=>fastq_gunzip % [1, unaligned_relative, lane], :fastq2=>""})
+                vars.update({:fastq1=>fastq_gunzip % [unaligned_relative, lane], :fastq2=>""})
                 fq1 = lane
                 fq2 = " "
                 
