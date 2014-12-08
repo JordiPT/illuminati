@@ -229,7 +229,7 @@ module Illuminati
                 fq1 = lane
                 fq2 = " "
                 
-                fastq_entry = [fq[:genome], fq1] 
+                fastq_entry = [fq[:genome], fq1, fq2] 
                 fastq_table << fastq_entry
                 
                 root            = lane_fq[1].gsub(/_001\.fastq\.gz/,"")
