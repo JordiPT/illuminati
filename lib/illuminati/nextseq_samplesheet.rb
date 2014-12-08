@@ -85,7 +85,7 @@ class NextSeqSampleSheet
         sample_name = [s[:lib_id],s[:barcode]].join(JOIN_CHAR)
         # temp, external_data_lims joins barcodes, need to split, if required
         if s[:barcode].include? "-"
-          barcodes = split('-')
+          barcodes = s[:barcode].split('-')
           barcode1 = barcodes[0]
           barcode2 = barcodes[1]
         else
