@@ -180,6 +180,7 @@ module Illuminati
           
           script.write ""
           script.write "# fastqc"
+          script.write "cd #{unaligned_dir}"
           script.write fastqc_qsub
           script.write ""
         end
