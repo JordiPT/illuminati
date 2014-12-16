@@ -169,7 +169,7 @@ module Illuminati
           # error: not sure why flowcell.path.id doesn't resolve
           #command += " #{script} -v --flowcell #{flowcell.paths.id} --files \"*.fastq.gz\""
         
-          command = " #{fastqc_script} -v --flowcell #{flowcell.id} --files \"*.fastq.gz\""
+          command = " #{fastqc_script} -v --flowcell #{flowcell.id} --files \"#{unaligned_dir}/*.fastq.gz\" --out #{unaligned_dir}"
           
           fastqc_hold_jid = ""
           if not options[:skip_bcl2fastq2]
@@ -180,7 +180,6 @@ module Illuminati
           
           script.write ""
           script.write "# fastqc"
-          script.write "cd #{unaligned_dir}"
           script.write fastqc_qsub
           script.write ""
         end
@@ -213,8 +212,10 @@ module Illuminati
           fastq_records = nxss.get_fastq_records
           bowtie2_jobs_count = 0
           
+          bowtie2_jobname = "nextseq_bowtie2"
+          
           vars_global = {:bowtie2=>BOWTIE2, :bowtie2_proc=>BOWTIE2_PROC.to_i,
-                         :job_name=>"nextseq_bowtie2", :output_dir=>bowtie2_align_dir}
+                         :job_name=>bowtie2_jobname, :output_dir=>bowtie2_align_dir}
           
           vars = vars_global
           fastq_table = [ ['genome','fastq1','fastq2'] ]
@@ -295,6 +296,9 @@ module Illuminati
           bowtie_qsub = "qsub  #{bcl2fastq2_hold_jid} #{bowtie2_array_script_full}"
           script.write bowtie_qsub
           
+          # write qsub email termination
+          script.write ""
+          script.write "qsub -hold_jid #{bowtie2_jobname} -m e -M #{EMAIL_RECIPIENTS} -b date"
           
           script.write ""
           script.write ""

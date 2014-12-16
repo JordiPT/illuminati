@@ -45,8 +45,8 @@ module Illuminati
   # where the genomes are stored.
   GENOMES_ROOT = config['genomes_root']
 
-
   EMAIL_SERVER = config['email_server']
+  EMAIL_RECIPIENTS = config['email_list'].join(',')
   WEB_DIR_ROOT = config['web_dir_root']
   NUM_LEADING_DIRS_TO_STRIP  = config['num_leading_dirs_to_strip']
   
