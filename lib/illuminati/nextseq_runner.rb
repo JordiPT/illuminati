@@ -298,7 +298,7 @@ module Illuminati
           
           # write qsub email termination
           script.write ""
-          script.write "qsub -hold_jid #{bowtie2_jobname} -m e -M #{EMAIL_RECIPIENTS} -b date"
+          script.write "qsub -hold_jid #{bowtie2_jobname} -m e -M #{EMAIL_RECIPIENTS} -b y date"
           
           script.write ""
           script.write ""
