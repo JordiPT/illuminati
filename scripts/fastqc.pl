@@ -10,6 +10,7 @@ use Data::Dumper;
 use JSON;
 use FindBin;
 use lib $FindBin::Bin;
+use File::Basename;
 
 use Getopt::Long;
 
@@ -125,7 +126,7 @@ my $j = $first_lane - 1;
 foreach my $file (@files) #collecting the pass/warn/fail info for each lane.
 {
 	# This is the first component of the href written in the reports. 
-	my $firstpart = $file;
+	my $firstpart = basename($file);
 	# it seems that if the file ends in .txt, then it won't be included in the directory
 	# name for images and such. However, if it ends in .fq the .fq will be part of the 
 	# name.
@@ -214,7 +215,7 @@ print HTML2 "<table cellpadding=1><tr><td></td><td><font size=2>&nbsp;&nbsp;&nbs
 $j = $first_lane - 1;
 foreach my $file (@files)
 {
-	my $firstpart = $file;
+	my $firstpart = basename($file);
 	$firstpart =~ s/\.txt//g;
    $firstpart =~ s/\.gz//g;
    $firstpart =~ s/\.fastq//g;
