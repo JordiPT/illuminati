@@ -114,7 +114,7 @@ def check_machine flowcell_data
 	missing_lanes = []
 	flowcell_data['samples'].each do |sample|
 		if sample['readLength'] =~ /^N/
-			puts red("Nextseq run. Do startup_run.rb --nextseq.")
+			puts red("Nextseq run. Do /n/ngs/tools/nextseq/illuminati/bin/startup_run.rb FCID --nextseq.")
 		end
 	end
 	rtn
