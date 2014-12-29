@@ -58,7 +58,7 @@ module Illuminati
         sample_data[:genome] = lims_sample_data["genomeVersion"]
         sample_data[:protocol] = (lims_sample_data["readType"] == "Single Read") ? "eland_extended" : "eland_pair"
         sample_data[:barcode_type] = case(lims_sample_data["indexType"])
-                                     when "ILL", "Illumina TruSeq", "Illumina", "NEB", "Rubicon R40048"
+                                     when "ILL", "Illumina TruSeq", "Illumina", "NEB", "Rubicon R40048","Rubicon_Dual"
                                        :illumina
                                      when "CUST"
                                        :custom
