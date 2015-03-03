@@ -22,12 +22,13 @@ module Illuminati
 
     def self.set_defaults config
       config['casava_path']         ||= '/n/ngs/tools/casava/CASAVA-1.8.2/bin'
-      config['email_list']          ||= ['jfv@stowers.org']
+      config['bcl2fastq_path']     ||= '/n/ngs/tools/bcl2fastq/build/perl/bin'
+      config['email_list']          ||= ['mcm@stowers.org','shc@stowers.org']
       config['qc_path']             ||= '/n/ngs/qcdata'
       config['admin_path']          ||= '/n/ngs/runs'
       config['logs_path']           ||= '/n/ngs/runs/log'
       config['flowcell_path_base']  ||= '/n/ngs/data'
-      config['outsource_path_base']  ||= '/n/ngs/data/outsource'
+      config['outsource_path_base'] ||= '/n/ngs/data/outsource'
       config['basecalls_path']      ||= File.join('Data', 'Intensities', 'BaseCalls')
       config['fastq_combine_path']  ||= 'all'
       config['fastq_undetermined_combine_path'] ||= 'undetermined'
@@ -37,8 +38,10 @@ module Illuminati
       config['fastq_stats_pattern'] ||= 'Basecall_Stats_*'
       config['eland_stats_pattern'] ||= 'Summary_Stats_*'
       config['email_server']        ||= 'localhost:25'
-      config['web_dir_root']        ||= 'http://molbio/solexaRuns/'
+      config['web_dir_root']        ||= 'http://bioinfo/n/'
+      config['genomes_root']        ||= '/n/ngs/igenome'
       config['num_leading_dirs_to_strip'] ||= '1'
+      config['num_processes']       ||= 24
       config
     end
   end

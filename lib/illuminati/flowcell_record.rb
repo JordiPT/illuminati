@@ -11,7 +11,7 @@ module Illuminati
   class Sample
     # This is all the sample data expected from the external data source.
     # See documentation in ExternalDataBase for more information
-    EXTERNAL_DATA = [:lane, :genome, :name, :protocol, :barcode, :barcode_type, :raw_barcode, :raw_barcode_type]
+    EXTERNAL_DATA = [:lane, :genome, :name, :protocol, :barcode, :barcode_type, :barcode_location, :raw_barcode, :raw_barcode_type, :order, :order_type, :lib_id, :lab]
     attr_accessor *EXTERNAL_DATA
 
     attr_accessor :parent_lane
@@ -56,6 +56,7 @@ module Illuminati
     #
     def lane_equal other_sample
       [:genome, :protocol].each do |lane_data|
+        # puts "#{self.send(lane_data)}"
         if self.send(lane_data) != other_sample.send(lane_data)
           return false
         end
@@ -207,7 +208,7 @@ module Illuminati
       outputs.each_with_index do |output, index|
         data = {:output => output, :lane => lane, :name => name,
                 :illumina => illumina_barcode, :custom => custom_barcode,
-                :read => reads[index], :genome => genome}
+                :read => reads[index], :genome => genome, :order => order, :lib_id => lib_id, :order_type => order_type, :lab => lab}
         all_reads_data << data
       end
       all_reads_data
@@ -281,13 +282,23 @@ module Illuminati
       rtn
     end
 
+    def to_a
+      lane = []
+      samples.each do |sample|
+        lane << sample.to_h
+      end
+      lane
+    end
+
     #
     # Returns the first sample as a hash.
     # The idea being, all the lane data is really maintained in the Sample class
     # for convience. So, the first sample of the lane will have all the relevant lane
     # data.
     #
+    #
     def to_h
+
       samples[0].to_h if samples[0]
     end
 
@@ -296,7 +307,9 @@ module Illuminati
     # Uses Sample lane_equal
     #
     def equal other_lane
+      # puts "#{self.number} <-> #{other_lane.number}"
       if ((!samples[0]) or (!other_lane.samples[0]))
+        # puts "returning false #{samples[0]}"
         return false
       end
       samples[0].lane_equal(other_lane.samples[0])
@@ -392,8 +405,8 @@ module Illuminati
     # Use SampleSheetView to output string representing
     # flowcell in SampleSheet.csv format.
     #
-    def to_sample_sheet
-      view = SampleSheetView.new(self)
+    def to_sample_sheet lanes = [1,2,3,4,5,6,7,8]
+      view = SampleSheetView.new(self, lanes)
       view.write
     end
 
@@ -401,8 +414,8 @@ module Illuminati
     # Use ConfigFileView to output string representing
     # flowcell in config.txt format.
     #
-    def to_config_file
-      view = ConfigFileView.new(self)
+    def to_config_file lanes = [1,2,3,4,5,6,7,8]
+      view = ConfigFileView.new(self, lanes)
       view.write
     end
 

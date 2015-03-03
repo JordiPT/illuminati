@@ -34,11 +34,15 @@ module Illuminati
     # {
     #   :lane => String name of lane (1 - 8),
     #   :name => Sample name.
+    #   :lib_id => Sample Library ID
     #   :genome => Code for genome used for lane. Should correlate to folder name in genomes dir,
     #   :protocol => Should be either "eland_extended" or "eland_pair",
     #   :barcode_type => Should be :illumina, :custom, or :none
     #   :barcode => If :barcode_type is not :none, this provides the 6 sequence barcode
     #   :raw_barcode => Sequence to feed back to LIMS for reported barcode. No restriction on content.
+    #   :order => Sample order
+    #   :order_type => Descriptive text of order type
+    #
     # }
     #
     def sample_data_for flowcell_id
@@ -53,18 +57,37 @@ module Illuminati
         sample_data[:name] = lims_sample_data["sampleName"]
         sample_data[:genome] = lims_sample_data["genomeVersion"]
         sample_data[:protocol] = (lims_sample_data["readType"] == "Single Read") ? "eland_extended" : "eland_pair"
-        sample_data[:barcode_type] = case(lims_sample_data["indexesUsed"])
-                                     when "ILL"
+        sample_data[:barcode_type] = case(lims_sample_data["indexType"])
+                                     when "ILL", "Illumina TruSeq", "Illumina", "NEB", "Nugen", "Rubicon R40048","Rubicon_Dual"
                                        :illumina
                                      when "CUST"
                                        :custom
-                                     when "BIOO"
+                                     when "BIOO", "BiooScientific", "BioScientific", "BiooSci_Fake", "BiooSci_Trimmed"
+                                       :illumina
+                                     when "Nextera", "Dual Custom"
                                        :illumina
                                      else
                                        :none
                                      end
-        sample_data[:barcode] = lims_sample_data["index"] || ""
-        sample_data[:raw_barcode] = lims_sample_data["index"] || ""
+        sample_data[:barcode_location] = case(lims_sample_data["locOfCustBarcode"])
+                                         when "Illumina TruSeq Style"
+                                           :illumina
+                                         when "Nextera Duel Indexing"
+                                           :dual
+                                         when "Beginning of Insert"
+                                           :custom
+                                         else
+                                           :custom
+                                         end
+
+        if lims_sample_data["indexSequences"] and !lims_sample_data["indexSequences"].empty?
+          sample_data[:barcode] = lims_sample_data["indexSequences"].collect {|s| s.strip}.join("-")
+          sample_data[:raw_barcode] = lims_sample_data["indexSequences"].collect {|s| s.strip}.join("-")
+        else
+          sample_data[:barcode] =  ""
+          sample_data[:raw_barcode] =  ""
+        end
+
         sample_data[:raw_barcode_type] = sample_data[:barcode_type]
 
         sample_data[:path] = lims_sample_data["resultsPath"]
@@ -75,6 +98,12 @@ module Illuminati
           sample_data[:barcode] = ""
           sample_data[:barcode_type] = :none
         end
+
+        sample_data[:lib_id] = lims_sample_data["libID"]
+        sample_data[:order] = lims_sample_data["prnOrderNo"]
+        sample_data[:order_type] = lims_sample_data["orderType"]
+
+        sample_data[:lab] = lims_sample_data["reqLabName"]
 
 
         if lims_sample_data["isControl"] == 1
@@ -102,7 +131,7 @@ module Illuminati
     end
 
     def is_valid_barcode? sequence
-      (sequence =~ /^[CAGTUcagtu]+$/) and (sequence.length > 5)
+      (sequence =~ /^[CAGTUcagtu_-]+$/) and (sequence.length > 5)
     end
 
     #

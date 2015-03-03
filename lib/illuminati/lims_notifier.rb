@@ -118,7 +118,18 @@ module Illuminati
       lims_data["laneID"] = sample.lane
       lims_data["readNo"] = read
 
+		if sample.raw_barcode
+		else
+			puts "sample raw barcode is false. setting to empty string"
+			sample.raw_barcode = ""
+		end
+
       lims_data["index"] = sample.raw_barcode unless sample.raw_barcode == ""
+		if lims_data['index']
+			if lims_data['index'].index("-") != nil
+			  lims_data['indexes'] = lims_data['index'].split("-")
+			end
+		end
 
       lims_data
     end

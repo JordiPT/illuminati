@@ -6,6 +6,8 @@
 use strict;
 use warnings;
 
+use Data::Dumper;
+use JSON;
 use FindBin;
 use lib $FindBin::Bin;
 
@@ -15,14 +17,15 @@ my $thumbscript = "$FindBin::Bin/thumbs.sh";
 
 my $names_file = "";
 my $output_dir = ".";
-my ($verbose, $help,  $skip, $auto_out) ;
-my $files_pattern = "*{sequence,qseq}*.{txt,qc,fq}";
+my ($verbose, $help,  $skip, $auto_out, $fcid) ;
+my $files_pattern = "*{sequence,qseq,fastq}*.{txt,fq,gz}";
 my $result = GetOptions ("name=s" => \$names_file, #string
 	                     "verbose" => \$verbose, #bool
                        "skip" => \$skip, #bool
                        "auto-out" => \$auto_out, #bool
                        "out=s" => \$output_dir, #string
                        "help" => \$help,
+						     "flowcell=s" =>\$fcid, #string
                        "files=s" =>\$files_pattern); 
 usage() if $help;
 
@@ -39,6 +42,8 @@ sub usage
 	print "			to the current directory.\n";
 	print "\n";
 	print "--skip - Do not run fastqc on the sequence data, only generate reports from a previous run\n";
+	print "\n";
+	print "--flowcell FCID - the flowcell id. Used to get sample names from lims\n";
 	print "\n";
 	print "--files FILE_PATTERN - The file pattern to run fastqc on. Defaults to *sequence / *qseq files\n";
 	print "\n";
@@ -164,9 +169,10 @@ foreach my $file (@files) #collecting the pass/warn/fail info for each lane.
 
 	# If we can extract the adapter sequence - and there is a match in our hash, use that 
 	my $adapter_seq = extract_adapter_sequence($file);
-	#print $adapter_seq . "\n" if $verbose; 
-	my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || "unknown";
-	#print $sample_name . "\n" if $verbose;
+	my $lane_number = extract_lane_number($file);
+	print "adapter seq: " . $adapter_seq . "\n" if $verbose; 
+	my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq,$lane_number) || "unknown";
+	print "sam name: " . $sample_name . "\n" if $verbose;
 	
 	#print the row (lane)
 	print HTML "<tr><td><font size=2><a href=\"$firstpart"."_fastqc/fastqc_report.html\">$file</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>$sample_name</font>&nbsp;&nbsp;</td></td>$pfs</tr>\n";
@@ -234,8 +240,9 @@ foreach my $file (@files)
 	my $row = join("",@imgs);
 
 
+	my $lane_number = extract_lane_number($file);
    my $adapter_seq = extract_adapter_sequence($file);
-   my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || "unknown";
+   my $sample_name = $adapter_name{$adapter_seq} || $samplenames[$j] || get_sample_name($fcid,$adapter_seq,$lane_number) || "unknown";
 
 	print "Sample Name: " . $sample_name . "\n" if $verbose;
 
@@ -256,6 +263,58 @@ foreach my $file (@files)
 print HTML2 "</table>";
 print HTML2 "<br>";
 print HTML2 "<font size=2><a href=\"http://wiki/research/FastQC/SIMRreports\">How to interpret FastQC results</a></font>";
+
+sub extract_lane_number
+{
+	my ($filename) = @_;
+	my $lane_number = "";
+	if ($filename =~ /.*_(NoIndex)/)
+	{
+		$lane_number = $1;
+	}
+	return($lane_number);
+}
+
+sub get_sample_name
+{
+	my($fcid,$adapter_seq,$lane_number) = @_;
+	my $samname = "unknown";
+
+	if($fcid)
+	{
+		print "in get_sample_name $fcid $adapter_seq\n";
+		my $result =`perl /n/ngs/tools/lims/lims_data.pl $fcid`;
+		chomp($result);
+
+		my $json = JSON->new->allow_nonref;
+		  
+		my $perl_scalar = $json->decode($result);
+
+		my $len = scalar( keys $perl_scalar->{samples});
+		for(my $i=0; $i < $len; $i++)
+		{
+			my $index = $perl_scalar->{samples}[$i]->{indexSequences}[0];
+			my $dual_index = $perl_scalar->{samples}[$i]->{indexSequences}[0]."-".$perl_scalar->{samples}[$i]->{indexSequences}[1];
+			if($adapter_seq eq "NoIndex" and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
+			{
+				$samname = $perl_scalar->{samples}[$i]->{sampleName};
+			}
+			elsif($perl_scalar->{samples}[$i]->{sampleName} eq "" or !exists($perl_scalar->{samples}[$i]->{sampleName}))
+			{
+				#do nothing
+			}
+			elsif(($adapter_seq eq $index or $adapter_seq eq $dual_index) and $perl_scalar->{samples}[$i]->{laneID}==$lane_number)
+			{
+				$samname = $perl_scalar->{samples}[$i]->{sampleName};
+			}
+		}
+		return($samname);
+	}
+	else
+	{
+		return("unknown");
+	}
+}
 
 sub extract_adapter_sequence
 {

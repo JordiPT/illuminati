@@ -5,6 +5,8 @@ module Illuminati
 
   # Location of CASAVA 1.8's bin directory
   CASAVA_PATH         = File.expand_path config['casava_path']
+  # Location of bclTofastq bin directory
+  BCL2FASTQ_PATH         = File.expand_path config['bcl2fastq_path']
   # List emailer uses to email out messages.
   EMAIL_LIST          = config['email_list']
   # Path to put quality control files in.
@@ -18,6 +20,9 @@ module Illuminati
   FLOWCELL_PATH_BASE  = File.expand_path config['flowcell_path_base']
   # Root directory of location of outsource flowcell run directories.
   OUTSOURCE_PATH_BASE  = File.expand_path config['outsource_path_base']
+
+  ASSESTS_PATH = File.join(File.dirname(__FILE__), "..", "..", "assests")
+  NUM_PROCESSES = config['num_processes']
 
 
   # Relative path of the Basecalls directory
@@ -36,6 +41,9 @@ module Illuminati
   FASTQ_STATS_PATTERN = config['fastq_stats_pattern']
   # Pattern to use when searching for the aligned stats directory.
   ELAND_STATS_PATTERN = config['eland_stats_pattern']
+
+  # where the genomes are stored.
+  GENOMES_ROOT = config['genomes_root']
 
 
   EMAIL_SERVER = config['email_server']
@@ -62,7 +70,7 @@ module Illuminati
     end
 
     def self.lims_upload_script
-      File.join(internal_scripts_path, "lims_upload_samples.pl")
+      File.join(internal_scripts_path, "lims_upload_samples.rb")
     end
 
     def self.lims_complete_script
