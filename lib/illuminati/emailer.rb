@@ -17,13 +17,14 @@ module Illuminati
     # file::
     #   optional filename. If not nil, the contents of the file will
     #   be echoed into the body of the email.
-    def self.email title,  file = nil
+    def self.email title,  file1 = nil, file2 = nil
       EMAIL_LIST.each do |address|
-        command = "mail -s \"#{title}\" #{address}"
-        if file
-          command += " < #{file}"
+
+        if file1
+          command = "mutt -a \"#{file1}\" -s \"#{title}\" -- #{address} < \"#{file2}\""
 
         else
+          command = "mail -s \"#{title}\" #{address}"
           command = "echo \"that is all\" | #{command}"
         end
         puts command

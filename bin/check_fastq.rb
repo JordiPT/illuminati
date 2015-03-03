@@ -97,7 +97,7 @@ if __FILE__ == $0
     end
 
     system "Rscript barplot.r #{fastq_summary} #{fastq_barplot}"
-    Illuminati::Emailer.email "fastq files stats: #{fastq_barplot}" , fastq_barplot
+    Illuminati::Emailer.email "fastq files stats for #{flowcell_id}" , fastq_barplot, fastq_summary
   else
     puts "ERROR: No flowcell_id"
   end

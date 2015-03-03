@@ -313,7 +313,7 @@ module Illuminati
           # write post run command
 
           if options[:postrun]
-            nextseq_postrun_command = "qsub -cwd -hold_jid #{bowtie2_jobname} /n/ngs/tools/nextseq2/illuminati/bin/Nextseq_postrun #{flowcell_id}"
+            nextseq_postrun_command = "qsub -cwd -hold_jid #{bowtie2_jobname} #{NEXTSEQ_POSTRUN_SCRIPT} #{flowcell_id}"
             if !options[:fake]
               script.write nextseq_postrun_command
             end
