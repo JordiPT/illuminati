@@ -45,10 +45,21 @@ module Illuminati
   # where the genomes are stored.
   GENOMES_ROOT = config['genomes_root']
 
-
   EMAIL_SERVER = config['email_server']
+  EMAIL_RECIPIENTS = config['email_list'].join(',')
   WEB_DIR_ROOT = config['web_dir_root']
   NUM_LEADING_DIRS_TO_STRIP  = config['num_leading_dirs_to_strip']
+  
+  BCL2FASTQ2_PATH   = File.expand_path config['bcl2fastq2']
+  BCL2FASTQ2_PROC   = 8
+  NEXTSEQ_UNALIGNED = config['nextseq_unaligned']
+  NEXTSEQ_ALIGNED   = config['nextseq_aligned']
+  
+  BOWTIE2           = config['bowtie2']
+  BOWTIE2_PROC      = config['bowtie2_proc']
+  BOWTIE2_SGE_PROC  = config['bowtie2_sge_proc']
+  BOWTIE2_INDEXES   = config['bowtie2_indexes']
+  
 end
 
 module Illuminati
@@ -56,7 +67,7 @@ module Illuminati
     def self.internal_scripts_path
       File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "scripts"))
     end
-
+    
     def self.fastqc_script
       File.join(internal_scripts_path, "fastqc.pl")
     end
@@ -76,6 +87,23 @@ module Illuminati
     def self.lims_complete_script
       File.join(internal_scripts_path, "lims_flowcell_complete.pl")
     end
+    
+    def self.lims_fc_info
+      File.join(internal_scripts_path, "lims_fc_info.rb")
+    end
+    
+    def self.bcl2fastq2_script
+      File.join(ASSESTS_PATH, "bcl2fastq2.sh")
+    end
+    
+    def self.bowtie2_script
+      File.join(ASSESTS_PATH, "bowtie2.sh")
+    end
+    
+    def self.bowtie2_array
+      File.join(ASSESTS_PATH, "bowtie2_array.sh")
+    end
+    
   end
 end
 
