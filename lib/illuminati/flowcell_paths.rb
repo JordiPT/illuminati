@@ -72,6 +72,8 @@ module Illuminati
 
     #
     # The Basecalls diretory for this flowcell.
+    
+    
     #
     def base_calls_dir
       File.join(base_dir, BASECALLS_PATH)
@@ -140,6 +142,9 @@ module Illuminati
       File.join(fastq_combine_dir, "fastqc")
     end
 
+    def nextseq_fastqc_dir
+      File.join(unaligned_dir, "fastqc")
+    end
     #
     # Directory used by CASAVA 1.8 to put export files.
     #
@@ -159,6 +164,10 @@ module Illuminati
       directories_in aligned_dir, PROJECT_PATTERN
     end
 
+    
+    def aligned_bowtie_dir
+      File.join(aligned_dir,"bowtie2")
+    end
     #
     # Location that Illuminati will use to rename and combine
     # export files.
@@ -228,6 +237,10 @@ module Illuminati
     # Path for the sample report file
     #
     def sample_report_path
+      File.join(base_dir, "Sample_Report.csv")
+    end
+    
+    def nextseq_sample_report_path
       File.join(base_dir, "Sample_Report.csv")
     end
 

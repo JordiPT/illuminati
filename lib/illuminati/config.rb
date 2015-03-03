@@ -27,7 +27,7 @@ module Illuminati
       config['bowtie2']             ||= '/n/local/stage/bowtie2/current/bowtie2'
       config['bowtie2_sge_proc']    ||= 8
       config['bowtie2_proc']        ||= 6
-      config['email_list']          ||= ['mcm@stowers.org']
+      config['email_list']          ||= ['shc@stowers.org']
       config['qc_path']             ||= '/n/ngs/qcdata'
       config['admin_path']          ||= '/n/ngs/runs'
       config['logs_path']           ||= '/n/ngs/runs/log'

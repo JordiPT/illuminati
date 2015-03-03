@@ -16,8 +16,11 @@ def cyan(text); colorize(text, 36); end
 module Illuminati
   
   BASE_BIN_DIR = File.expand_path(File.dirname(__FILE__))
+
   LOGGER_SCRIPT = File.join(BASE_BIN_DIR, "logger.rb")
   EMAILER_SCRIPT = File.join(BASE_BIN_DIR, "emailer.rb")
+  NEXTSEQ_POSTRUN_SCRIPT = File.join(BASE_BIN_DIR, "Nextseq_postrun")
+  CHECK_FASTQ_SCRIPT = File.join(BASE_BIN_DIR, "check_fastq.rb")
 
   ## Testing 
   ## class NextSeqFlowcellPaths < FlowcellPaths
@@ -161,29 +164,38 @@ module Illuminati
           command = "#{EMAILER_SCRIPT} \"starting bcl2fastq2 #{flowcell_id}\""
           script.write command
           script.write ""   
-        end
-        
-        if not options[:skip_fastqc]
+          end
+
+
+        #if not options[:skip_fastqc]
           # run fastq stats?
-          fastqc_script = Illuminati::ScriptPaths.fastqc_script
+         # fastqc_script = Illuminati::ScriptPaths.fastqc_script
           # error: not sure why flowcell.path.id doesn't resolve
           #command += " #{script} -v --flowcell #{flowcell.paths.id} --files \"*.fastq.gz\""
         
-          command = " #{fastqc_script} -v --flowcell #{flowcell.id} --files \"#{unaligned_dir}/*.fastq.gz\" --out #{unaligned_dir}"
+          #command = " #{fastqc_script} -v --flowcell #{flowcell.id} --files \"#{unaligned_dir}/*.fastq.gz\" --out #{unaligned_dir}"
           
-          fastqc_hold_jid = ""
-          if not options[:skip_bcl2fastq2]
-              fastqc_hold_jid = "-hold_jid #{bcl2fastq2_jobname}"
-          end
+          #fastqc_hold_jid = ""
+          #if not options[:skip_bcl2fastq2]
+          #    fastqc_hold_jid = "-hold_jid #{bcl2fastq2_jobname}"
+          #end
           
-          fastqc_qsub = "qsub #{fastqc_hold_jid} #{command}"
+          #fastqc_qsub = "qsub #{fastqc_hold_jid} #{command}"
           
-          script.write ""
-          script.write "# fastqc"
-          script.write fastqc_qsub
-          script.write ""
+          #script.write ""
+          #script.write "# fastqc"
+          #script.write fastqc_qsub
+          #script.write ""
+        #end
+
+        #send the bcl2fastqc results stat, if barcode is wrong, no need to perform the alignment and postrun
+        #fastq_data = check_fastq_error flowcell
+        check_fastq_command = "qsub -cwd -hold_jid #{bcl2fastq2_jobname} #{CHECK_FASTQ_SCRIPT} #{flowcell_id} nextseq"
+        if !options[:fake]
+          script.write check_fastq_command
         end
-        
+
+
         if not options[:align]
           # 
           puts "NO ALIGN: #{options[:align]}"
@@ -282,26 +294,37 @@ module Illuminati
             
           bcl2fastq2_hold_jid = ""
           if not options[:skip_bcl2fastq2]
-            bcl2fastq2_hol_jid = "-hold_jid #{bcl2fastq2_jobname}"
+            bcl2fastq2_hold_jid = "-hold_jid #{bcl2fastq2_jobname}"
           end
+
+
           
-          command = "#{EMAILER_SCRIPT} \"starting bowtie2  #{flowcell_id}\""
+          command = "qsub -cwd #{bcl2fastq2_hold_jid} #{EMAILER_SCRIPT} \"starting bowtie2  #{flowcell_id}\""
           script.write command
           script.write ""
-          
-          script.write "cd #{unaligned_dir}"
+          script.write "mkdir -p #{flowcell.qsub_db_path}"
+          script.write "cd #{flowcell.qsub_db_path}"
           script.write ""
           
           # write qsub bowtie2 commands
-          bowtie_qsub = "qsub  #{bcl2fastq2_hold_jid} #{bowtie2_array_script_full}"
+          bowtie_qsub = "qsub -cwd #{bcl2fastq2_hold_jid} #{bowtie2_array_script_full}"
           script.write bowtie_qsub
-          
+
+          # write post run command
+
+          if options[:postrun]
+            nextseq_postrun_command = "qsub -cwd -hold_jid #{bowtie2_jobname} /n/ngs/tools/nextseq2/illuminati/bin/Nextseq_postrun #{flowcell_id}"
+            if !options[:fake]
+              script.write nextseq_postrun_command
+            end
+          else
+            puts "NOT PERFORMING POSTRUN"
+          end
+
+
           # write qsub email termination
           script.write ""
-          script.write "qsub -hold_jid #{bowtie2_jobname} -m e -M #{EMAIL_RECIPIENTS} -b y date"
-          
-          script.write ""
-          script.write ""
+          #script.write "qsub -hold_jid #{bowtie2_jobname} -m e -M #{EMAIL_RECIPIENTS} -b y date"
           
           exit
         
@@ -405,6 +428,8 @@ module Illuminati
         
         command
       end
+
+
       
       
     end

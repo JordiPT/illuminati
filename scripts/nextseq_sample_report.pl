@@ -16,9 +16,6 @@ my $result = GetOptions ("flowcell=s" => \$flowcell, #string
 					  			"help" => \$help); #string
 usage() if $help;
 
-#maybe add this to get read length? put in a file and parse?
-#find Unaligned/fastqc -name "fastqc_data.txt" | xargs grep "Sequence length"
-
 sub usage
 {
    print "usage: nextseq_sample_report.pl [-h] -f FCID [-b bowtie2_err -d bamfile_dir]\n";
@@ -34,10 +31,44 @@ sub usage
    exit;
 }
 
+my %bwt_err = ();
+
+#ugly hack to get sequence length and number of sequences - mainly for when there's no bowtie results.
+`find Unaligned/fastqc -name "fastqc_data.txt" | xargs grep "Sequence length" > sequence_length.txt`;
+`find Unaligned/fastqc -name "fastqc_data.txt" | xargs grep "Total Sequences" > total_sequences.txt`;
+
+open(seqlength,"sequence_length.txt") or die $!;
+while(<seqlength>)
+{
+	chomp;
+	($firstpart,$seqlengthpart) = split(":",$_);
+	($junk,$dirname,@junk) = split("fastqc",$firstpart);
+	$dirname =~ s/^\///g;
+	$dirname =~ s/_001_$//g;
+	$seqlength = $seqlengthpart;
+	$seqlength =~ s/^Sequence\slength\s//g;
+	$seqlength =~ s/\t+//g;
+	$bwt_err{$dirname}{"sequence_length"} = $seqlength;
+}
+
+open(totalseq,"total_sequences.txt") or die $!;
+while(<totalseq>)
+{
+	chomp;
+	($firstpart,$totalseqpart) = split(":",$_);
+	($junk,$dirname,@junk) = split("fastqc",$firstpart);
+	$dirname =~ s/^\///g;
+	$dirname =~ s/_001_$//g;
+	$total_sequences = $totalseqpart;
+	$total_sequences =~ s/^Total\sSequences\s//g;
+	$total_sequences =~ s/\t+//g;
+	print "adding to hash :$dirname: :$total_sequences:\n";
+	$bwt_err{$dirname}{"total_sequences"} = $total_sequences;
+}
+
 @fastqfiles = glob("Unaligned/*.fastq.gz");
 @bamfiles = glob("$bamfile_dir/*.bam");
 
-my %bwt_err = ();
 if($bowtie2_err and $bowtie2_err ne "none")
 {
 	print "running parse_bowtie2_err.pl $bowtie2_err > bowtie2_err.txt\n";
@@ -67,7 +98,7 @@ elsif($bowtie2_err eq "none")
 		$bwt_err{$modname}{'total_reads'} = "";
 		$bwt_err{$modname}{'align_percent'} = "";
 		push(@bamfiles,$modname);
-		#print "inserting into hash $modname $processed $pct_aligned\n";
+		print "inserting into hash $modname $processed $pct_aligned\n";
 	}
 }
 else
@@ -131,17 +162,17 @@ for(my $i = 0; $i <= $#t; $i++)
 		{
 			if($bamfiles[$j] =~ /.*L00$laneID\.bam$/)
 			{
-				print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,\n";
+				print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
 			}
 		}
 		elsif($bamfiles[$j] =~ /.*L00$laneID.*\.bam$/ and ($bamfiles[$j] =~ /.*$indexSequences0-$indexSequences1.*/ or $bamfiles[$j] =~ /.*$indexSequences0.*/))
 		{
-			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,\n";
+			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
 		}
 	}
 }
-print "mkdir -p $resultsPath\n";
-print "cp Sample_Report.csv $resultsPath\n";
-print "cp Unaligned/*fastq.gz $resultsPath\n";
-print "cp -r Unaligned/fastqc $resultsPath\n";
-print "mail -s $flowcell.nextseq.postrun.done mcm\@stowers.org </dev/null\n";
+#print "mkdir -p $resultsPath\n";
+#print "cp Sample_Report.csv $resultsPath\n";
+#print "cp Unaligned/*fastq.gz $resultsPath\n";
+#print "cp -r Unaligned/fastqc $resultsPath\n";
+#print "mail -s $flowcell.nextseq.postrun.done mcm\@stowers.org </dev/null\n";

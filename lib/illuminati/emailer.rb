@@ -17,11 +17,12 @@ module Illuminati
     # file::
     #   optional filename. If not nil, the contents of the file will
     #   be echoed into the body of the email.
-    def self.email title, file = nil
+    def self.email title,  file = nil
       EMAIL_LIST.each do |address|
         command = "mail -s \"#{title}\" #{address}"
         if file
           command += " < #{file}"
+
         else
           command = "echo \"that is all\" | #{command}"
         end
