@@ -268,7 +268,7 @@ module Illuminati
         complete_lims(wait_on_task, wait_time)
       end
 =end
-      stop_flowcell(wait_on_task)
+      #stop_flowcell(wait_on_task)
     end
 
     def parallel_distribute_fastq prefix, distributions, full_source_paths, dependency = nil
