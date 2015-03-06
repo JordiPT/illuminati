@@ -1,7 +1,5 @@
 #! /usr/bin/env ruby
 
-
-
 $:.unshift(File.join(File.dirname(__FILE__), "..", "lib"))
 
 require 'illuminati'
@@ -27,12 +25,20 @@ if __FILE__ == $0
         result = `du -b #{x}`
         fastq_array = result.split("\t")
         match = fastq_array[1] =~ $FASTQ_PATTERN
-
+        lane = $4.to_i
+        replicates = $5.to_i
         if ($2 == "Undetermined")
+          newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_Undetermined.fastq.gz")
           lane = "Undetermined_#{$4.to_i}"
+
         else
+          library,barcode = $2.split(/-/)
+          newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{barcode}.fastq.gz")
           lane = "Regular_#{$4.to_i}"
         end
+        command =  "mv #{x} #{newname}"
+        puts command
+        system command
         size = fastq_array[0].to_i
 
         if(fastq_hash.has_key?(lane))
@@ -83,6 +89,8 @@ if __FILE__ == $0
           fastq_hash[lane] = size
         end
       end
+    else
+      puts "Please specify type: nextseq or hiseq"
     end
 
 
@@ -96,8 +104,8 @@ if __FILE__ == $0
       end
     end
 
-    system "Rscript barplot.r #{fastq_summary} #{fastq_barplot}"
-    Illuminati::Emailer.email "fastq files stats for #{flowcell_id}" , fastq_barplot, fastq_summary
+    system "/n/local/bin/Rscript /n/ngs/tools/pilluminati/bin/barplot.r #{fastq_summary} #{fastq_barplot}"
+    Illuminati::Emailer.email "fastq files stats: #{fastq_barplot}" , fastq_barplot
   else
     puts "ERROR: No flowcell_id"
   end

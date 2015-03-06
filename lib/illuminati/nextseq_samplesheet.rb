@@ -121,11 +121,14 @@ class NextSeqSampleSheet
         entry = @lib_record[index]
         sample_number = index + 1
         for lane_index in [1,2,3,4] #config.nextseq_lanes
-          lane_number_padded = lane_index.to_s.rjust(3, '0')
+          #lane_number_padded = lane_index.to_s.rjust(3, '0')
           fastq_record = {} # handle paired-end samples using hash
           for read_number in @read_numbers
             #fastq_name = "#{entry[:sample_name]}_S#{sample_number}_L#{lane_number_padded}_R#{read_number}_001#{fastq_ext}"
-            fastq_name = "n_#{lane_index}_#{read_number}_#{entry[:sample_name]}#{fastq_ext}"
+            library,barcode = entry[:sample_name].split(/-/)
+            fastq_name = "n_#{lane_index}_#{read_number}_#{barcode}#{fastq_ext}"
+            #puts fastq_name
+
             fastq_record[read_number] = fastq_name
             fastq_counts = fastq_counts + 1
           end

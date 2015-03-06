@@ -137,6 +137,7 @@ module Illuminati
       script.write ""
 
       # ensure casava bin path and bcltofastq bin is in $PATH
+
       command = "export PATH=#{CASAVA_PATH}:$PATH"
       command = "export PATH=#{BCL2FASTQ_PATH}:$PATH"
       script.write command
@@ -226,11 +227,11 @@ if __FILE__ == $0
     nx.run_nextseq_pipeline
   else
     # test for next seq
-    nx = Illuminati::NextSeqRunner.new flowcell_id, options
-    if nx.nextseq?
-      nx.run_nextseq_pipeline
-    else
+    #nx = Illuminati::NextSeqRunner.new flowcell_id, options
+    #if nx.nextseq?
+    #  nx.run_nextseq_pipeline
+    #else
       Illuminati::Starter::write_admin_script flowcell_id, options
-    end
+    #end
   end
 end

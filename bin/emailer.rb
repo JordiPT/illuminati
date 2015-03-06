@@ -12,9 +12,10 @@ require 'illuminati'
 
 if __FILE__ == $0
   title = ARGV[0]
-  file = ARGV[1]
+  file1 = ARGV[1]
+  file2 = ARGV[2]
   if title
-    Illuminati::Emailer.email title, file
+    Illuminati::Emailer.email title, file1, file2
   else
     puts "ERROR: call with title of email"
   end

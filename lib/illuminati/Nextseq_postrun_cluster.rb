@@ -1,10 +1,8 @@
 require 'parallel'
 require 'illuminati/emailer'
 
-BASE_BIN_DIR = File.expand_path(File.dirname(__FILE__))
-FILTER_SCRIPT = File.join(BASE_BIN_DIR, "fastq_filter.rb")
-
 module Illuminati
+  BASE_BIN_DIR = File.expand_path(File.dirname(__FILE__))
   #
   # The most complicated and least well implemented of the Illuminati classes.
   # PostRunner is executed after the alignment step has completed. It Performs all the
@@ -35,7 +33,7 @@ module Illuminati
   class NextSeqPostRunnerCluster
     attr_reader :flowcell
     attr_reader :options
-    ALL_STEPS = %w{fastqc report  lims_upload lims_complete distribution}
+    ALL_STEPS = %w{fastqc report  distribution}
     DEFAULT_STEPS = %w{ fastqc report distribution}
 
 
@@ -50,7 +48,7 @@ module Illuminati
     #   :test - is the runner in test mode?
     #
     def initialize flowcell, options = {}
-      options = {:test => false, :steps => ALL_STEPS}.merge(options)
+      options = {:test => true, :steps => ALL_STEPS}.merge(options)
 
       options[:steps].each do |step|
         valid = true
@@ -283,9 +281,19 @@ module Illuminati
       distributions.each do |distributions|
         log "# Creating directory #{distributions[:path]}"
         execute "mkdir -p #{distributions[:path]}"
+
         fastq_file_data.each do |fastq_file_data|
           if distributions[:lane].to_i == fastq_file_data[:lane].to_i
-           entry = {:input => fastq_file_data[:path], :output => distributions[:path], :recursive => false}
+            #rename fastq files when cp
+            #if(fastq_file_data[:library]=="Undetermined")
+            #  fastq_newname = "#{distributions[:path]}n_#{fastq_file_data[:lane]}_#{fastq_file_data[:replicates]}_Undetermined.fastq.gz"
+            #else
+            #  fastq_library,fastq_barcode=fastq_file_data[:library].split(/-/)
+            #  fastq_newname = "#{distributions[:path]}n_#{fastq_file_data[:lane]}_#{fastq_file_data[:replicates]}_#{fastq_barcode}.fastq.gz"
+            #end
+           #entry = {:input => fastq_file_data[:path], :output => fastq_newname, :recursive => false}
+
+            entry = {:input => fastq_file_data[:path], :output => distributions[:path], :recursive => false}
            database << entry
           end
         end
@@ -337,7 +345,7 @@ module Illuminati
         base_name = File.basename(file)
        match = base_name =~ $NAME_PATTERN
        raise "ERROR: #{file} does not match expected file name pattern" unless match
-        data = {:lane => $3.to_i, :path => file}
+        data = {:lane => $3.to_i, :replicates => $4.to_i ,:path => file, :library => $1.to_s}
         data
       end
       file_data
@@ -417,7 +425,7 @@ module Illuminati
       if check_exists(report_path)
         bowtie_dir = @flowcell.paths.aligned_bowtie_dir
         execute "cd #{report_path}"
-        command = "perl /n/ngs/tools/nextseq/illuminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir}"
+        command = "perl /n/ngs/tools/nextseq/illuminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}"
   
         execute command
         #execute "cd #{cwd}"
