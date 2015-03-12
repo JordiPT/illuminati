@@ -46,8 +46,8 @@ while(<seqlength>)
 {
 	chomp;
 	($firstpart,$seqlengthpart) = split(":",$_);
-	($junk,$dirname,@junk) = split("fastqc",$firstpart);
-	$dirname =~ s/^\///g;
+	($dirname,@junk) = split("_fastqc",$firstpart);
+	$dirname =~ s/^.*\///g;
 	$seqlength = $seqlengthpart;
 	$seqlength =~ s/^Sequence\slength\s//g;
 	$seqlength =~ s/\t+//g;
@@ -59,8 +59,8 @@ while(<totalseq>)
 {
 	chomp;
 	($firstpart,$totalseqpart) = split(":",$_);
-	($junk,$dirname,@junk) = split("fastqc",$firstpart);
-	$dirname =~ s/^\///g;
+	($dirname,@junk) = split("_fastqc",$firstpart);
+	$dirname =~ s/^.*\///g;
 	$total_sequences = $totalseqpart;
 	$total_sequences =~ s/^Total\sSequences\s//g;
 	$total_sequences =~ s/\t+//g;
@@ -114,6 +114,7 @@ else
 #L13386-CGCTCATT-CTTCGCCT_S21_L002_R2   790132   406611   51.46 319322   40.41 64199 8.13  470810   59.59
 
 open(REPORT, ">$base_dir/Sample_Report.csv") or die "Can't open $file $!";
+print "flowcell:$flowcell\n";
 my $result = `perl /n/ngs/tools/lims/lims_data.pl $flowcell`;
 my $decoded = decode_json($result);
 @t = @{$decoded->{'samples'}};
@@ -137,20 +138,23 @@ for(my $i = 0; $i <= $#t; $i++)
 	$reqLabName = $decoded->{'samples'}[$i]->{'reqLabName'};
 	$resultsPath = $decoded->{'samples'}[$i]->{'resultsPath'};
 
-	#print "lane:$laneID\nisControl:$isControl\nindex:$indexSequences0\nindex:$indexSequences1\n";
+	print "lane:$laneID\nisControl:$isControl\nindex:$indexSequences0\nindex:$indexSequences1\n";
 
 	#print Dumper $decoded->{'samples'}[$i];
 
 	for(my $j; $j <= $#bamfiles; $j++)
 	{
+		$current_bamfile = basename($bamfiles[$j]);
+		print "current_bamfile:$current_bamfile\n";
 		#print "$bamfiles[$j] $laneID $indexSequences0 $indexSequences1\n";
 		$modname = basename($bamfiles[$j]);
 		$modname1 = basename($bamfiles[$j]);
 		$modname1 =~ s/.bam/.fastq.gz/g;
 		$modname =~ s/.bam//g;
+		print "modname:$modname modname1:$modname1\n";
 
 
-		if($modname =~ /_\d_1_/)
+		if($modname =~ /n_\d_1_/)
 		{
 			$read = 1;
 		}
@@ -161,14 +165,13 @@ for(my $i = 0; $i <= $#t; $i++)
 
 		if($isControl == 1)
 		{
-			if($bamfiles[$j] =~ /^[sn]_$laneID_.*bam$/)
+			if($current_bamfile =~ /^n_$laneID_.*bam$/)
 			{
 				print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
 			}
 		}
-		elsif($bamfiles[$j] =~ /^[sn]_$laneID_.*bam$/ and ($bamfiles[$j] =~ /.*$indexSequences0-$indexSequences1.*/ or $bamfiles[$j] =~ /.*$indexSequences0.*/))
+		elsif($current_bamfile =~ /^n_$laneID_.*bam$/ and ($current_bamfile =~ /.*$indexSequences0-$indexSequences1.*/ or $current_bamfile =~ /.*$indexSequences0.*/))
 		{
-
 			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
 		}
 	}

@@ -21,7 +21,7 @@ module Illuminati
       EMAIL_LIST.each do |address|
 
         if file1
-          command = "/usr/bin/mutt -a \"#{file1}\" -s \"#{title}\" -- #{address} < \"#{file2}\""
+          command = "mutt -a \"#{file1}\" -s \"#{title}\" -- #{address} < \"#{file2}\""
         else
           command = "mail -s \"#{title}\" #{address}"
         end

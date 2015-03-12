@@ -33,8 +33,8 @@ module Illuminati
   class NextSeqPostRunnerCluster
     attr_reader :flowcell
     attr_reader :options
-    ALL_STEPS = %w{fastqc report  distribution}
-    DEFAULT_STEPS = %w{ fastqc report distribution}
+    ALL_STEPS = %w{fastqc   distribution report}
+    DEFAULT_STEPS = %w{ fastqc  distribution report}
 
 
     #
@@ -48,7 +48,7 @@ module Illuminati
     #   :test - is the runner in test mode?
     #
     def initialize flowcell, options = {}
-      options = {:test => true, :steps => ALL_STEPS}.merge(options)
+      options = {:test => false, :steps => ALL_STEPS}.merge(options)
 
       options[:steps].each do |step|
         valid = true
@@ -220,11 +220,7 @@ module Illuminati
 
       end
 
-      if steps.include? "report"
-        nextseq_create_sample_report @flowcell.paths.base_dir, distributions
-        #distribute_sample_report distributions
-      end
-   
+
       if steps.include? "distribution"
         fastq_distribution_task = parallel_distribute_fastq "fastq", distributions, @flowcell.paths.unaligned_dir
 
@@ -234,7 +230,13 @@ module Illuminati
 
 
       end
-      
+
+      if steps.include? "report"
+        nextseq_create_sample_report @flowcell.paths.base_dir, distributions
+        #distribute_sample_report distributions
+      end
+
+
 =begin
    
        if steps.include? "qcdata"
@@ -324,7 +326,7 @@ module Illuminati
       end
 
       #puts database
-    task_id = submit_parallel(prefix, "cp_files", database)
+    task_id = submit_parallel(prefix, "cp_files", database, false, true)
     task_id
     end
 
@@ -333,7 +335,7 @@ module Illuminati
       files = [files].flatten
 
       #$NAME_PATTERN = /(.*)_([ATCGN-]+|NoIndex|Undetermined)_L(\d{3})_R(\d)_(\d{3})#{suffix_pattern}/
-      $NAME_PATTERN = /(.*)_S(\d)_L(\d{3})_R(\d)_(\d{3})#{suffix_pattern}/
+      $NAME_PATTERN = /(n)_(\d)_(\d)_([ATCGN-]+|NoIndex|Undetermined)#{suffix_pattern}/
       # 1_ACTTGA_ACTTGA_L001_R1_002.fastq.gz
       # $1 = "1_ACTTGA"
       # $2 = "ACTTGA"
@@ -345,14 +347,14 @@ module Illuminati
         base_name = File.basename(file)
        match = base_name =~ $NAME_PATTERN
        raise "ERROR: #{file} does not match expected file name pattern" unless match
-        data = {:lane => $3.to_i, :replicates => $4.to_i ,:path => file, :library => $1.to_s}
+        data = {:lane => $2.to_i, :path => file}
         data
       end
       file_data
     end
 
 
-    def submit_parallel prefix, task_name, database, dependency = nil
+    def submit_parallel prefix, task_name, database, dependency = nil, sync = nil
       cwd = Dir.pwd
       # get child cat script
       child_process_script = File.join(ASSESTS_PATH, "#{task_name}.rb")
@@ -386,6 +388,10 @@ module Illuminati
         command = "qsub -cwd -V"
         if dependency
           command += " -hold_jid #{dependency}"
+        end
+
+        if sync
+          command += " -sync y"
         end
         command += " -t 1-#{database.size}:1 -N #{full_task_name} #{wrapper_script} #{child_process_script} #{db_filename}"
         execute(command)
@@ -425,11 +431,11 @@ module Illuminati
       if check_exists(report_path)
         bowtie_dir = @flowcell.paths.aligned_bowtie_dir
         execute "cd #{report_path}"
-        command = "perl /n/ngs/tools/nextseq/illuminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}"
+        execute "export PATH=$PATH:/n/local/stage/perlbrew/perlbrew-0.43/perls/perl-5.16.1t/bin/perl"
+        command = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReportGenerator -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
   
         execute command
-        #execute "cd #{cwd}"
-        execute "cp #{report_path}/Sample_Report.csv #{unique_distributions[0]}"
+        execute "qsub -cwd -hold_jid SampleReportGenerator -N copy_report /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp #{report_path}/Sample_Report.csv #{unique_distributions[0]}\""
       end
       
     end
@@ -449,7 +455,7 @@ module Illuminati
     #
     def parallel_run_fastqc fastq_path, dependency = nil, distributions = []
       status "running fastqc"
-      prefix = "nextseq"
+      prefix = "fastqc"
       #puts "---"+fastq_path.to_s+"---"+distributions.to_s
       cwd = Dir.pwd
       task_name = nil

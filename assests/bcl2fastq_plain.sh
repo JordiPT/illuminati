@@ -1,4 +1,5 @@
 #!/bin/sh
+#$ -N hiseq_bcl2fastq
 #$ -S /bin/bash
 
 SCRIPT="${1}"

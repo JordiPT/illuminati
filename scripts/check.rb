@@ -166,7 +166,7 @@ def check_machine flowcell_data
     if hiseq
       puts red("Samples are labeled both Nextseq and Hiseq. Check lims.")
     else
-      puts red("Nextseq run. /n/ngs/tools/nextseq/illuminati/bin/startup_run.rb #{flowcell_data['FCID']} --nextseq.")
+      puts red("Nextseq run. startup_run.rb #{flowcell_data['FCID']} --nextseq")
     end
   end
   rtn

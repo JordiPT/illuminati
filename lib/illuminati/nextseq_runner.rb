@@ -254,7 +254,7 @@ module Illuminati
                 fastq_entry = [fq[:genome], fq1, fq2] 
                 fastq_table << fastq_entry
                 
-                root            = lane.gsub(/_001\.fastq\.gz/,"")
+                root            = lane.gsub(/\.fastq\.gz/,"")
                 bamfile         = root + ".bam"
                 bamstats_output = root + "_bamstats.txt"
                 output_err_log  = root + ".err"
@@ -307,13 +307,13 @@ module Illuminati
 
 
           
-          command = "qsub -cwd #{bcl2fastq2_hold_jid} #{EMAILER_SCRIPT} \"starting bowtie2  #{flowcell_id}\""
+          command = "qsub -cwd -hold_jid checkFastq -v PATH -N bowtie_email /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{EMAILER_SCRIPT}  \"starting_bowtie2_#{flowcell_id}\"\""
           script.write command
           script.write ""
 
           
           # write qsub bowtie2 commands
-          bowtie_qsub = "qsub -cwd #{bcl2fastq2_hold_jid} #{bowtie2_array_script_full}"
+          bowtie_qsub = "qsub -cwd -hold_jid checkFastq #{bowtie2_array_script_full}"
           script.write bowtie_qsub
 
           # write post run command
