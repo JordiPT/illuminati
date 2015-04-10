@@ -33,8 +33,8 @@ module Illuminati
   class NextSeqPostRunnerCluster
     attr_reader :flowcell
     attr_reader :options
-    ALL_STEPS = %w{fastqc   distribution report}
-    DEFAULT_STEPS = %w{ fastqc  distribution report}
+    ALL_STEPS = %w{fastqc distribution report lims_upload}
+    DEFAULT_STEPS = %w{fastqc distribution report lims_upload}
 
 
     #
@@ -233,7 +233,12 @@ module Illuminati
 
       if steps.include? "report"
         nextseq_create_sample_report @flowcell.paths.base_dir, distributions
+
         #distribute_sample_report distributions
+      end
+
+      if steps.include? "lims_upload"
+        upload_lims("SampleReportGenerator")
       end
 
 
@@ -268,8 +273,15 @@ module Illuminati
         complete_lims(wait_on_task, wait_time)
       end
 =end
-      #stop_flowcell(wait_on_task)
+       stop_flowcell(wait_on_task)
     end
+
+    def upload_lims dependency
+      status "uploading Sample Report to lims"
+
+      task_name = submit_one("lims", "lims_upload", dependency, "#{@flowcell.id}","nextseq")
+    end
+
 
     def parallel_distribute_fastq prefix, distributions, full_source_paths, dependency = nil
       database = []

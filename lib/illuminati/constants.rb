@@ -95,6 +95,10 @@ module Illuminati
     def self.bcl2fastq2_script
       File.join(ASSESTS_PATH, "bcl2fastq2.sh")
     end
+
+    def self.bcl2fastq2_script_dual
+      File.join(ASSESTS_PATH, "bcl2fastq2_dual.sh")
+    end
     
     def self.bowtie2_script
       File.join(ASSESTS_PATH, "bowtie2.sh")

@@ -1,5 +1,5 @@
 require 'json'
-
+require 'csv'
 require 'illuminati/flowcell_record'
 require 'illuminati/tab_file_parser'
 require 'illuminati/casava_output_parser'
@@ -9,21 +9,21 @@ module Illuminati
   class LimsNotifier
     TEMP_JSON_FILE_NAME = "lims_data.json"
 
-    def initialize flowcell
-      @view = LimsUploadView.new(flowcell)
+    def initialize flowcell, type
+      @view = LimsUploadView.new(flowcell,type)
       @flowcell = flowcell
+      @type = type
     end
 
-    def upload_to_lims
+    def upload_to_lims type=nil
       data = @view.to_json
-
       json_filename = File.join(@flowcell.paths.base_dir, TEMP_JSON_FILE_NAME)
 
       File.open(json_filename, 'w') do |file|
         file.puts(data)
       end
       perl_script = Illuminati::ScriptPaths.lims_upload_script
-      command = "#{perl_script} #{json_filename}"
+      command = "#{perl_script} #{json_filename} #{type}"
       puts command
       system(command)
     end
@@ -31,6 +31,7 @@ module Illuminati
     def complete_analysis
       perl_script = Illuminati::ScriptPaths.lims_complete_script
       command = "#{perl_script} #{@flowcell.id}"
+      puts command
       system(command)
     end
   end
@@ -56,49 +57,80 @@ module Illuminati
     CUSTOM_TO_LIMS = {}
 
 
-    def initialize flowcell
+
+    def initialize flowcell, type
       @flowcell = flowcell
-      @demultiplex_filename = ""
-      if @flowcell.paths.unaligned_stats_dir
-        @demultiplex_filename = File.join(@flowcell.paths.unaligned_stats_dir, "Demultiplex_Stats.htm")
+      @type = type
+      puts type
+      if type=="nextseq"
+        @nextseq_sample_report = ""
+        if @flowcell.paths.base_dir
+          @nextseq_sample_report = File.join(@flowcell.paths.base_dir,"Sample_Report.csv")
+          #puts @nextseq_sample_report.inspect
+        else
+          puts "ERROR: No Sample Report found under directory #{@flowcell.paths.base_dir}"
+        end
       else
-        puts "ERROR: No Unaligned Stats Dir found"
-        puts "Expected: #{@flowcell.paths.unaligned_stats_dir}"
+        @demultiplex_filename = ""
+        if @flowcell.paths.unaligned_stats_dir
+          @demultiplex_filename = File.join(@flowcell.paths.unaligned_stats_dir, "Demultiplex_Stats.htm")
+        else
+          puts "ERROR: No Unaligned Stats Dir found"
+          puts "Expected: #{@flowcell.paths.unaligned_stats_dir}"
+        end
+
+        @sample_summary_filenames = []
+        if @flowcell.paths.aligned_stats_dirs
+          @sample_summary_filenames = @flowcell.paths.aligned_stats_dirs.collect {|dir| File.join(dir, "Sample_Summary.htm") }
+        else
+          puts "ERROR: No Aligned Stats Dir found"
+          puts "Expected: #{@flowcell.paths.aligned_stats_dir}"
+        end
       end
 
-      @sample_summary_filenames = []
-      if @flowcell.paths.aligned_stats_dirs
-        @sample_summary_filenames = @flowcell.paths.aligned_stats_dirs.collect {|dir| File.join(dir, "Sample_Summary.htm") }
-      else
-        puts "ERROR: No Aligned Stats Dir found"
-        puts "Expected: #{@flowcell.paths.aligned_stats_dir}"
-      end
     end
 
 
     def to_json
       flowcell_data = []
+
       custom_barcoded_lanes_seen = []
-      @flowcell.each_sample_with_lane do |sample, lane|
-        sample.reads.each do |read|
-          send = true
 
-          # only send data for custom barcoded lanes once
-          if sample.barcode_type == :custom
-            if !custom_barcoded_lanes_seen.include? sample.lane
-              custom_barcoded_lanes_seen << sample.lane
-            else
-              send = false
+      if(@type=="nextseq")
+        sample_read_data = get_csv_data()
+        flowcell_data << sample_read_data
+
+      else
+        @flowcell.each_sample_with_lane do |sample, lane|
+
+          sample.reads.each do |read|
+            send = true
+
+
+            # only send data for custom barcoded lanes once
+            if sample.barcode_type == :custom
+              if !custom_barcoded_lanes_seen.include? sample.lane
+                custom_barcoded_lanes_seen << sample.lane
+              else
+                send = false
+              end
             end
-          end
 
-          if send
-            sample_read_data = data_for sample, read
-            flowcell_data << sample_read_data
+            if send
+              sample_read_data = data_for sample, read
+              flowcell_data << sample_read_data
+
+            end
           end
         end
       end
-      flowcell_data.to_json
+
+     #puts flowcell_data
+
+
+     flowcell_data.to_json
+
+
     end
 
     def data_for sample, read
@@ -107,9 +139,12 @@ module Illuminati
       #if sample.barcode_type == :custom
       #  sample_data = get_custom_data sample, read
       #else
-        sample_data = get_casava_data sample, read
+
+      sample_data = get_casava_data sample, read
+
+
       #end
-      sample_data
+     sample_data
     end
 
     def lims_data_for sample, read
@@ -129,9 +164,49 @@ module Illuminati
 			if lims_data['index'].index("-") != nil
 			  lims_data['indexes'] = lims_data['index'].split("-")
 			end
-		end
+    end
 
       lims_data
+    end
+
+    ##not usable part
+    def get_nextseq_data
+
+      csv_data = CSV.read @nextseq_sample_report
+      headers = csv_data.shift.map {|i| i.to_s }
+      string_data = csv_data.map {|row| row.map {|cell| cell.to_s }}
+      array_of_hashes = string_data.map {|row| Hash[*headers.zip(row).flatten] }
+      array_of_hashes
+
+    end
+    ####
+
+    def get_csv_data
+      align_data = []
+      sample_data = []
+
+      CSV.foreach(@nextseq_sample_report) do |row|
+        align_data << row
+      end
+
+      align_data.shift
+
+      align_data.each do |x|
+        array = x[0].split("_")
+        index = array[3].split(".")
+
+        if index[0].include? "-"
+          indexes = {}
+          indexes['indexes']=index[0].split("-")
+          sample_data << { "FCID"=>@flowcell.id, "laneID"=>x[3], "readNo"=>x[8], "index"=>index[0],"indexes"=>indexes['indexes'],"pctAlignPF"=>x[14],"clustersRaw"=>x[11],"clustersPF"=>x[11],"pctClustersPF"=>x[13]}
+        else
+          sample_data << { "FCID"=>@flowcell.id, "laneID"=>x[3], "readNo"=>x[8], "index"=>index[0],"pctAlignPF"=>x[14],"clustersRaw"=>x[11],"clustersPF"=>x[11],"pctClustersPF"=>x[13]}
+        end
+
+      end
+
+     sample_data
+
     end
 
     def get_custom_data sample, read
@@ -159,6 +234,7 @@ module Illuminati
       casava_data = {}
       lims_data = lims_data_for(sample, read)
       casava_data = parser.data_for(sample, read)
+
       if casava_data.empty?
         puts "ERROR: sample report maker cannot find demultiplex data for #{sample.id}"
       else
@@ -176,7 +252,9 @@ module Illuminati
           lims_data[lims_key] = casava_data[casava_key]
         end
       end
-      lims_data
+
+     lims_data
+
     end
   end
 end

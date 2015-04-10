@@ -9,6 +9,7 @@ if __FILE__ == $0
   flowcell_id = ARGV[0]
   type = ARGV[1]
   flag = ARGV[2]
+
   #puts flowcell_id
   if flowcell_id
     flowcell = Illuminati::FlowcellPaths.new flowcell_id
@@ -23,7 +24,7 @@ if __FILE__ == $0
       if(flag=="rerun")
         $FASTQ_PATTERN = /(n)_(\d)_(\d)_([ATCGN-]+|NoIndex|Undetermined)(.*)/
       else
-        $FASTQ_PATTERN = /(.*)Unaligned\/(.*)_S(\d)_L(\d{3})_R(\d)_(.*)/
+        $FASTQ_PATTERN = /(.*)Unaligned\/(.*)_S(.*)_L(\d{3})_R(\d)_(.*)/
       end
 
       fastq_files.each do |x|
@@ -50,8 +51,15 @@ if __FILE__ == $0
           lane = "Undetermined_#{lane}"
 
         else
-          library,barcode = data_type.split(/-/)
-          newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{barcode}.fastq.gz")
+          if(flag=="dual")
+            library,barcode1,barcode2 = data_type.split(/-/)
+            newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{barcode1}-#{barcode2}.fastq.gz")
+
+          else
+            library,barcode = data_type.split(/-/)
+            newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{barcode}.fastq.gz")
+          end
+
           lane = "Regular_#{lane}"
 
         end
@@ -65,11 +73,11 @@ if __FILE__ == $0
           fastq_hash[lane] = size
         end
 
-        if(!flag)
+        if(flag!="rerun")
           #rename fastq files
           command =  "mv #{x} #{newname}"
           puts command
-          #system command
+          system command
         end
 
 
@@ -130,8 +138,8 @@ if __FILE__ == $0
       end
     end
 
-    system "/n/local/bin/Rscript /n/ngs/tools/pilluminati/bin/barplot.r #{fastq_summary} #{fastq_barplot}"
-    Illuminati::Emailer.email "fastq files stats: #{flowcell_id}" , fastq_barplot, fastq_summary
+   system "/n/local/bin/Rscript /n/ngs/tools/pilluminati/bin/barplot.r #{fastq_summary} #{fastq_barplot}"
+   Illuminati::Emailer.email "fastq files stats: #{flowcell_id}" , fastq_barplot, fastq_summary
 
   else
     puts "ERROR: No flowcell_id"

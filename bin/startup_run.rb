@@ -171,13 +171,13 @@ module Illuminati
         script.write command
       end
 
-      script.write "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
-      script.write ""
-      check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid hiseq_bcl2fastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} hiseq\""
-      if !@options[:fake]
-        script.write check_fastq_command
-      end
-      script.write ""
+     # script.write "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
+     # script.write ""
+     # check_fastq_command = "qsub -cwd -hold_jid hiseq_bcl2fastq -v PATH -N checkFastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} hiseq\""
+     # if !@options[:fake]
+     #   script.write check_fastq_command
+     # end
+     # script.write ""
         #script.write "# after complete, run this command and paste results to wiki page"
         #script.write "# fc_info #{flowcell_id}"
 

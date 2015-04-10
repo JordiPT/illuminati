@@ -35,8 +35,8 @@ module Illuminati
   class PostRunnerCluster
     attr_reader :flowcell
     attr_reader :options
-    ALL_STEPS = %w{unaligned filter custom undetermined fastqc aligned stats report qcdata lims_upload lims_complete}
-    DEFAULT_STEPS = %w{unaligned undetermined fastqc aligned stats report qcdata lims_upload lims_complete}
+    ALL_STEPS = %w{unaligned filter custom undetermined checkFastq fastqc aligned stats report qcdata lims_upload lims_complete}
+    DEFAULT_STEPS = %w{unaligned undetermined checkFastq fastqc aligned stats report qcdata lims_upload lims_complete}
 
     #
     # New PostRunner instance
@@ -196,6 +196,14 @@ module Illuminati
         wait_on_task = unaligned_task
         log "wait_on_task: #{wait_on_task}"
         submit_one("undetermined", "email", wait_on_task, "UNDETERMINED", @flowcell.paths.id)
+      end
+
+      if steps.include? "checkFastq"
+        log "checkFastq waiting on: #{wait_on_task}"
+        execute "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
+        check_fastq_command = "qsub -cwd -hold_jid #{wait_on_task} -v PATH -N checkFastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{@flowcell.paths.id} hiseq\""
+        execute check_fastq_command
+
       end
 
       if steps.include? "fastqc"

@@ -5,6 +5,7 @@ require 'uri'
 require 'json'
 
 input_json_filename = ARGV[0]
+type = ARGV[1]
 
 if !input_json_filename or !File.exist?(input_json_filename)
   puts "Usage:"
@@ -21,15 +22,33 @@ url = URI.parse("#{root_url}/molbio/api/ngs/flowcells/setDataForSamples")
 req = Net::HTTP::Post.new(url.path, initheader = {'Content-Type' => 'application/json'})
 req.basic_auth 'apitoken', api_token
 
-json_data = JSON.parse(File.open(input_json_filename,'r').read)
 
-json_data.each do |sample_data|
-  next unless sample_data['sampleYield'] != nil
-  params = {'samplesData' => [sample_data]}
-  req.body = params.to_json
 
-  resp = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
-  puts resp.body
+if type == "nextseq"
+  json_data = JSON.parse(File.open(input_json_filename,'r').read)
+  json_data.each do |sample_data|
+
+    sample_data.each do |sample_data|
+      params = {'samplesData' => [sample_data]}
+     # puts params
+      req.body = params.to_json
+      #puts req.body
+      resp = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
+      puts resp.body
+    end
+  end
+
+else
+  json_data = JSON.parse(File.open(input_json_filename,'r').read)
+  json_data.each do |sample_data|
+    next unless sample_data['sampleYield'] != nil
+    params = {'samplesData' => [sample_data]}
+    req.body = params.to_json
+    #puts req.body
+    resp = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
+    puts resp.body
+  end
 end
+
 
 

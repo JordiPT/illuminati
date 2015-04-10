@@ -38,6 +38,7 @@ class NextSeqSampleSheet
     def initialize options, samples
       @options = options
       @orig_samples = samples
+
       if samples.first[:protocol] == 'eland_pair' 
         @read_numbers = [1,2]
       else
@@ -87,7 +88,13 @@ class NextSeqSampleSheet
         if s[:barcode].include? "-"
           barcodes = s[:barcode].split('-')
           barcode1 = barcodes[0]
-          barcode2 = barcodes[1]
+
+          if @options[:dual]
+            barcode2 = self.reverse_comp barcodes[1]
+          else
+            barcode2 = barcodes[1]
+          end
+
         else
           barcode1 = s[:barcode]
           barcode2 = ""
@@ -107,6 +114,23 @@ class NextSeqSampleSheet
     def get_libs
       @libs
     end
+
+    def reverse_comp barcode
+      barcode_new = ""
+      barcode.split("").each do |i|
+        if i=="A"
+          barcode_new = barcode_new+ "T"
+        elsif i=="T"
+          barcode_new = barcode_new+ "A"
+        elsif i=="C"
+          barcode_new = barcode_new+ "G"
+        elsif i=="G"
+          barcode_new = barcode_new+ "C"
+        else barcode_new = "wrong barcode"
+        end
+      end
+      return barcode_new.reverse
+    end
     
     def fastq_names
       # create a mapping for lib_ids to fastq files
@@ -125,8 +149,14 @@ class NextSeqSampleSheet
           fastq_record = {} # handle paired-end samples using hash
           for read_number in @read_numbers
             #fastq_name = "#{entry[:sample_name]}_S#{sample_number}_L#{lane_number_padded}_R#{read_number}_001#{fastq_ext}"
-            library,barcode = entry[:sample_name].split(/-/)
-            fastq_name = "n_#{lane_index}_#{read_number}_#{barcode}#{fastq_ext}"
+            if @options[:type]=:dual
+              library,barcode1,barcode2 = entry[:sample_name].split(/-/)
+              fastq_name = "n_#{lane_index}_#{read_number}_#{barcode1}-#{barcode2}#{fastq_ext}"
+            else
+              library,barcode = entry[:sample_name].split(/-/)
+              fastq_name = "n_#{lane_index}_#{read_number}_#{barcode}#{fastq_ext}"
+            end
+
             #puts fastq_name
 
             fastq_record[read_number] = fastq_name

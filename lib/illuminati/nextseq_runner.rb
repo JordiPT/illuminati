@@ -94,7 +94,12 @@ module Illuminati
         #script = ScriptWriter.new temp_flowcell_script_path
         
         #vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=>"/Users/srm/tmp/"}
-        vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir}
+        #puts @options[:type]
+        if options[:type] == :dual
+          vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir, :dual => true}
+        else
+          vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir, :dual => false}
+        end
         
         script = ScriptWriter.new flowcell.script_path
         
@@ -122,7 +127,9 @@ module Illuminati
         fc_sample_data = fc_lims_data.sample_data_for flowcell_id
         
         # create Sample sheet
-        nxss = NextSeqSampleSheet.new vars, fc_sample_data
+
+          nxss = NextSeqSampleSheet.new vars, fc_sample_data
+
         
         bcl2fastq2_script_dir = flowcell.base_dir
         
@@ -141,8 +148,14 @@ module Illuminati
           vars[:runfolder_dir] = flowcell.base_dir
           
           required_keys = [:job_name,:sge_proc,:path,:bcl2fastq2,:input_dir,:output_dir,:runfolder_dir]
-          bcl2script = Illuminati::ScriptPaths.bcl2fastq2_script
-          
+
+
+          if options[:type] == :dual
+            bcl2script = Illuminati::ScriptPaths.bcl2fastq2_script_dual
+          else
+            bcl2script = Illuminati::ScriptPaths.bcl2fastq2_script
+          end
+
           bcl2fastq2_command = generate_script vars, required_keys, bcl2script
           
           bcl2fastq2_script_name = "qsub_bcl2fastq2.sh"
@@ -198,7 +211,13 @@ module Illuminati
         script.write "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
         script.write ""
         script.write "#get FastQ stats and rename the files"
-        check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid #{bcl2fastq2_jobname} /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} nextseq\""
+
+        if options[:type]=:dual
+          check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid #{bcl2fastq2_jobname} /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} nextseq dual\""
+        else
+          check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid #{bcl2fastq2_jobname} /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} nextseq\""
+        end
+
         if !options[:fake]
           script.write check_fastq_command
         end
