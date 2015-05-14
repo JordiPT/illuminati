@@ -171,10 +171,19 @@ module Illuminati
         else
           sample_sheet_sample = sample_sheet_data["samples"][$2.to_i - 1]
           puts data.inspect
-          if sample_sheet_sample["Sample_ID"] != data[:sample_name]
+          if sample_sheet_sample["Sample_ID"] == data[:sample_name]
+
+            puts "Warning: this is a 16s run on MiSeq, using SampleSheet Sample_ID data."
+
+          elsif sample_sheet_sample["Sample_Name"] == data[:sample_name]
+
+            puts "Warning: it is a normal MiSeq run instead of 16s,using SampleSheet Sample_Name data."
+
+          else
             puts "ERROR: SampleSheet.csv and filenames do not match"
-            puts "#{sample_sheet_sample["Sample_ID"]} -- #{data[:sample_name]}"
+            puts "#{sample_sheet_sample["Sample_ID"]} and #{sample_sheet_sample["Sample_Name"] } -- #{data[:sample_name]}"
             raise "ERROR: SampleSheet filename mismatch"
+
           end
           barcode = sample_sheet_sample["index"]
           if sample_sheet_sample["index2"]

@@ -82,7 +82,7 @@ module Illuminati
           puts red("--lanes is NOT a valid option for NextSeq pipeline.")
           exit
         end
-        
+
         flowcell = FlowcellPaths.new flowcell_id
         #flowcell = NextSeqFlowcellPaths.new flowcell_id
         puts flowcell.base_dir
@@ -96,8 +96,10 @@ module Illuminati
         #vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=>"/Users/srm/tmp/"}
         #puts @options[:type]
         if options[:type] == :dual
+
           vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir, :dual => true}
         else
+
           vars = {:sample_sheet_file=>"SampleSheet.csv", :runfolder_dir=> flowcell.base_dir, :dual => false}
         end
         
@@ -212,7 +214,7 @@ module Illuminati
         script.write ""
         script.write "#get FastQ stats and rename the files"
 
-        if options[:type]=:dual
+        if options[:type] == :dual
           check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid #{bcl2fastq2_jobname} /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} nextseq dual\""
         else
           check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid #{bcl2fastq2_jobname} /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} nextseq\""

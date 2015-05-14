@@ -48,9 +48,16 @@ while(<seqlength>)
 	($firstpart,$seqlengthpart) = split(":",$_);
 	($dirname,@junk) = split("_fastqc",$firstpart);
 	$dirname =~ s/^.*\///g;
+	$orig = $dirname;
+	($firstpart,$num1,$num2,$index,$rest) = split("_",$dirname);
+	($seq1,$seq2) = split("-",$index);
+	$seq2 = revcompl($seq2);
+	#n_3_2_AGGCAGAA-TAGATCGC_fastqc
+	$dirname = $firstpart."_".$num1."_".$num2."_".$seq1."-".$seq2;
 	$seqlength = $seqlengthpart;
 	$seqlength =~ s/^Sequence\slength\s//g;
 	$seqlength =~ s/\t+//g;
+	print "adding to hash $orig:$dirname: :$seqlength:\n";
 	$bwt_err{$dirname}{"sequence_length"} = $seqlength;
 }
 
@@ -61,10 +68,16 @@ while(<totalseq>)
 	($firstpart,$totalseqpart) = split(":",$_);
 	($dirname,@junk) = split("_fastqc",$firstpart);
 	$dirname =~ s/^.*\///g;
+	$orig = $dirname;
+	($firstpart,$num1,$num2,$index,$rest) = split("_",$dirname);
+	($seq1,$seq2) = split("-",$index);
+	$seq2 = revcompl($seq2);
+	#n_3_2_AGGCAGAA-TAGATCGC_fastqc
+	$dirname = $firstpart."_".$num1."_".$num2."_".$seq1."-".$seq2;
 	$total_sequences = $totalseqpart;
 	$total_sequences =~ s/^Total\sSequences\s//g;
 	$total_sequences =~ s/\t+//g;
-	print "adding to hash :$dirname: :$total_sequences:\n";
+	print "adding to hash $orig:$dirname: :$total_sequences:\n";
 	$bwt_err{$dirname}{"total_sequences"} = $total_sequences;
 }
 
@@ -85,6 +98,12 @@ if($bowtie2_err and $bowtie2_err ne "none")
 		($file,$processed,$aligned_once,$pct_aligned_once,$failed,$pct_failed,$aligned_multi,$pct_aligned_multi,$total_aligned,$pct_aligned) = split("\t",$_);
 		if($file ne "sample")
 		{
+			($firstpart,$num1,$num2,$index) = split("_",$file);
+			($seq1,$seq2) = split("-",$index);
+			$seq2 = revcompl($seq2);
+			#n_1_1_AGGCAGAA-TAGATCGC
+			$file = $firstpart."_".$num1."_".$num2."_".$seq1."-".$seq2;
+
 			$bwt_err{$file}{'total_reads'} = $processed;
 			$bwt_err{$file}{'align_percent'} = $pct_aligned;
 			print "inserting into hash $file $processed $pct_aligned\n";
@@ -131,8 +150,7 @@ for(my $i = 0; $i <= $#t; $i++)
 	$sampleName = $decoded->{'samples'}[$i]->{'sampleName'};
 	$laneID = $decoded->{'samples'}[$i]->{'laneID'};
 	$indexSequences0 = $decoded->{'samples'}[$i]->{'indexSequences'}[0];
-	#$indexSequences1 = revcompl($decoded->{'samples'}[$i]->{'indexSequences'}[1]);
-	$indexSequences1 = $decoded->{'samples'}[$i]->{'indexSequences'}[1];
+	$indexSequences1 = revcompl($decoded->{'samples'}[$i]->{'indexSequences'}[1]);
 	$libID = $decoded->{'samples'}[$i]->{'libID'};
 	$prnOrderNo = $decoded->{'samples'}[$i]->{'prnOrderNo'};
 	$genomeVersion = $decoded->{'samples'}[$i]->{'genomeVersion'};
@@ -146,6 +164,14 @@ for(my $i = 0; $i <= $#t; $i++)
 	for(my $j; $j <= $#bamfiles; $j++)
 	{
 		$current_bamfile = basename($bamfiles[$j]);
+
+		($temp
+		($firstpart,$num1,$num2,$indexbam) = split("_",$current_bamfile);
+		($seq1,$seq2) = split("-",$index);
+		$seq2 = revcompl($seq2);
+		#n_1_1_AGGCAGAA-TAGATCGC
+		$current_bamfile = $firstpart."_".$num1."_".$num2."_".$seq1."-".$seq2;
+
 		print "current_bamfile:$current_bamfile\n";
 		print "$bamfiles[$j] $laneID $indexSequences0 $indexSequences1\n";
 		$modname = basename($bamfiles[$j]);
