@@ -118,6 +118,8 @@ module PFastqc
 		  
 		  lib_id = get_lib_id(adapter_seq,fcid,lane_number)
 
+        puts lib_id
+
         #output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{sample_name}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
 		  
         output += "<td><a href=\"#{relative_fastq_dir}/fastqc_report.html\">#{file_name}</a></font></td><td nowrap>&nbsp;&nbsp;<font size=2>#{lib_id}</font>&nbsp;&nbsp;</td></td>#{image_row}</tr>\n"
@@ -144,8 +146,8 @@ module PFastqc
 
 	 def extract_lane_number file_name
 		 lane_number = ""
-		 if file_name =~ /s_(\d)_.*/
-			 lane_number = $1
+		 if file_name =~ /(s|n)_(\d)_.*/
+			 lane_number = $2
 		 end
 		 lane_number
 	 end
@@ -176,6 +178,7 @@ module PFastqc
 		 result = `perl /n/ngs/tools/lims/lims_data.pl #{fcid}`
 		 lims_data = JSON.parse(result)
 
+
 		 for sample in lims_data["samples"]
 			 if adapter_seq == "NoIndex" and sample["laneID"]==lane_number
 				 libid = sample["libID"]
@@ -190,6 +193,7 @@ module PFastqc
 			 end
 		 end
 		 lib_id
+
 	 end
 
     def combine
