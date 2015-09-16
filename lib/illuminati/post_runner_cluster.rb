@@ -36,7 +36,7 @@ module Illuminati
     attr_reader :flowcell
     attr_reader :options
     ALL_STEPS = %w{unaligned filter custom undetermined checkFastq fastqc aligned stats report qcdata lims_upload lims_complete}
-    DEFAULT_STEPS = %w{unaligned undetermined checkFastq fastqc aligned stats report qcdata lims_upload lims_complete}
+    DEFAULT_STEPS = %w{ undetermined checkFastq  aligned stats report qcdata lims_upload lims_complete}
 
     #
     # New PostRunner instance

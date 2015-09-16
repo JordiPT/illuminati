@@ -23,7 +23,7 @@ foreach my $file (@files)
 		chomp;
 		$newname = basename($file);
 		$newname =~ s/.err//g;
-		$newname =~ s/^n_\d_/n_/g;
+		#$newname =~ s/^n_\d_/n_/g;
 
 		$h{$newname}{bam_file} = $newname;
 		if($_ =~ /(\d+) reads; of these:/)
@@ -55,7 +55,7 @@ foreach my $file (@files)
 		elsif($_ =~ /([\d\.]+)% overall alignment rate/)
 		{
 			$overall_pct = $1;
-			push(@{$h{$newname}{pct_overall}},$overall_pct);
+			$h{$newname}{pct_overall} = $overall_pct;
 		}
 	}
 	$h{$newname}{total_aligned} = $h{$newname}{aligned}+$h{$newname}{multi};
@@ -64,10 +64,5 @@ foreach my $file (@files)
 print "sample\tprocessed\taligned_once\tpct_aligned_once\tfailed\tpct_failed\taligned_multi\tpct_multi\ttotal_aligned\tpct_aligned\n";
 foreach my $f (sort {ncmp($a,$b)} keys %h)
 {
-	$mypct = mean(@{$h{$f}{pct_overall}});
-	print "$h{$f}{bam_file}\t$h{$f}{proc}\t$h{$f}{aligned}\t$h{$f}{pct_aligned}\t$h{$f}{failed}\t$h{$f}{pct_failed}\t$h{$f}{multi}\t$h{$f}{pct_multi}\t$h{$f}{total_aligned}\t$mypct\n";
+	print "$h{$f}{bam_file}\t$h{$f}{proc}\t$h{$f}{aligned}\t$h{$f}{pct_aligned}\t$h{$f}{failed}\t$h{$f}{pct_failed}\t$h{$f}{multi}\t$h{$f}{pct_multi}\t$h{$f}{total_aligned}\t$h{$f}{pct_aligned}\n";
 }
-
-sub mean {
-	    return nearest(.01,sum(@_)/@_);
-	 }

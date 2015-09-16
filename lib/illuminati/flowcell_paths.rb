@@ -143,7 +143,7 @@ module Illuminati
     end
 
     def nextseq_fastqc_dir
-      File.join(unaligned_dir, "fastqc")
+      File.join(unaligned_dir, "all/fastqc")
     end
     #
     # Directory used by CASAVA 1.8 to put export files.

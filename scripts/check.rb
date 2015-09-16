@@ -153,6 +153,7 @@ def check_machine flowcell_data
   rtn = true
   nextseq = false
   hiseq = false
+  nextseq_dual=false
   missing_lanes = []
   flowcell_data['samples'].each do |sample|
     if sample['readLength'] =~ /^N/
@@ -161,12 +162,19 @@ def check_machine flowcell_data
     if sample['readLength'] =~ /^H/
       hiseq = true
     end
+    if sample['indexSequences'].length == 2
+      nextseq_dual=true
+    end
   end
   if nextseq 
     if hiseq
       puts red("Samples are labeled both Nextseq and Hiseq. Check lims.")
     else
-      puts red("Nextseq run. startup_run.rb #{flowcell_data['FCID']} --nextseq")
+      if nextseq_dual
+        puts green("Dual Index Nextseq run. startup_run.rb #{flowcell_data['FCID']} --nextseq --dual")
+      else
+        puts green("Nextseq run. startup_run.rb #{flowcell_data['FCID']} --nextseq")
+      end
     end
   end
   rtn

@@ -4,7 +4,6 @@
 # works for dual or single index, paired reads.
 
 use JSON;
-use Sort::Naturally;
 use Data::Dumper;
 use Getopt::Long;
 use File::Basename;
@@ -73,13 +72,11 @@ while(<totalseq>)
 @bamfiles = glob("$bamfile_dir/*.bam");
 
 
-
 if($bowtie2_err and $bowtie2_err ne "none")
 {
-	print "running parse_bowtie2_err.pl $bowtie2_err > $base_dir/bowtie2_err.txt\n";
-	system("parse_bowtie2_err.pl $bowtie2_err > $base_dir/bowtie2_err.txt");
-
-	open(bwt,"$base_dir/bowtie2_err.txt") or die $!;
+	print "running parse_bowtie2_err.by_lane.pl $bowtie2_err > $base_dir/bowtie2_err.by_lane.txt\n";
+    system("parse_bowtie2_err.by_lane.pl $bowtie2_err > $base_dir/bowtie2_err.by_lane.txt");
+	open(bwt,"$base_dir/bowtie2_err.by_lane.txt") or die $!;
 
 	while(<bwt>)
 	{
@@ -111,7 +108,12 @@ else
 	print "Unknown bowtie dir $bowtie2_err\n";
 }
 
-open(REPORT, ">$base_dir/Sample_Report.csv") or die "Can't open $file $!";
+#sample   processed   aligned_once   pct_aligned_once  failed   pct_failed  aligned_multi  pct_multi   total_aligned  pct_aligned
+#L13371-ATTACTCG-TAAGATTA_S6_L002_R1 902693   620303   68.72 174653   19.35 107737   11.94 728040   80.65
+#L13367-ATTACTCG-GCCTCTAT_S2_L003_R1 782794   472167   60.32 205900   26.30 104727   13.38 576894   73.70
+#L13386-CGCTCATT-CTTCGCCT_S21_L002_R2   790132   406611   51.46 319322   40.41 64199 8.13  470810   59.59
+
+open(REPORT, ">$base_dir/Sample_Report.by_lane.csv") or die "Can't open $file $!";
 print "flowcell:$flowcell\n";
 my $result = `perl /n/ngs/tools/lims/lims_data.pl $flowcell`;
 my $decoded = decode_json($result);
@@ -127,38 +129,70 @@ for(my $i = 0; $i <= $#t; $i++)
 	$orderType = $decoded->{'samples'}[$i]->{'orderType'};
 	$readType = $decoded->{'samples'}[$i]->{'readType'};
 	$sampleName = $decoded->{'samples'}[$i]->{'sampleName'};
+	$laneID = $decoded->{'samples'}[$i]->{'laneID'};
 	$indexSequences0 = $decoded->{'samples'}[$i]->{'indexSequences'}[0];
+	#$indexSequences1 = revcompl($decoded->{'samples'}[$i]->{'indexSequences'}[1]);
 	$indexSequences1 = $decoded->{'samples'}[$i]->{'indexSequences'}[1];
 	$libID = $decoded->{'samples'}[$i]->{'libID'};
 	$prnOrderNo = $decoded->{'samples'}[$i]->{'prnOrderNo'};
-	$laneID = $decoded->{'samples'}[$i]->{'laneID'};
 	$genomeVersion = $decoded->{'samples'}[$i]->{'genomeVersion'};
 	$reqLabName = $decoded->{'samples'}[$i]->{'reqLabName'};
 	$resultsPath = $decoded->{'samples'}[$i]->{'resultsPath'};
-	
-	if($laneID == 1)
-	{
-		#for each thing in bwt err
-		foreach my $k (sort {ncmp($a,$b)} keys(%bwt_err))
-		{
-			print "k:$k\n";
-			if($k =~ /n_1_$indexSequences0/)
-			{
-				$read = 1;
-			}
-			elsif($k =~ /n_2_$indexSequences0/)
-			{
-				$read = 2;
-			}
 
-			if($k =~ /^n_\d_$indexSequences0-$indexSequences1/)
+	print "lane:$laneID\nisControl:$isControl\nindex:$indexSequences0\nindex:$indexSequences1\n";
+
+	#print Dumper $decoded->{'samples'}[$i];
+
+	for(my $j; $j <= $#bamfiles; $j++)
+	{
+		$current_bamfile = basename($bamfiles[$j]);
+		print "current_bamfile:$current_bamfile\n";
+		print "$bamfiles[$j] $laneID $indexSequences0 $indexSequences1\n";
+		$modname = basename($bamfiles[$j]);
+		$modname1 = basename($bamfiles[$j]);
+		$modname1 =~ s/.bam/.fastq.gz/g;
+		$modname =~ s/.bam//g;
+		print "modname:$modname modname1:$modname1\n";
+
+		if($modname =~ /n_\d_1_/)
+		{
+			$read = 1;
+		}
+		else
+		{
+			$read = 2;
+		}
+
+		if($isControl == 1)
+		{
+			if($current_bamfile =~ /^n_$laneID.*/)
 			{
-				print REPORT "$k,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$k}{'total_sequences'},$bwt_err{$k}{'total_sequences'},100.00,$bwt_err{$k}{'align_percent'},paired,$bwt_err{$k}{'sequence_length'}\n";
-			}
-			elsif($k =~ /^n_\d_$indexSequences0/)
-			{
-				print REPORT "$k,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$k}{'total_sequences'},$bwt_err{$k}{'total_sequences'},100.00,$bwt_err{$k}{'align_percent'},paired,$bwt_err{$k}{'sequence_length'}\n";
+				print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+				print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
 			}
 		}
+		elsif($current_bamfile =~ /^n_$laneID.*/ and $current_bamfile =~ /.*$indexSequences0.bam/)
+		{
+			print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+		}
+		elsif($current_bamfile =~ /^n_$laneID.*/ and $current_bamfile =~ /.*$indexSequences0-$indexSequences1.*/)
+		{
+			print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+		}
 	}
+}
+#print "mkdir -p $resultsPath\n";
+#print "cp Sample_Report.csv $resultsPath\n";
+#print "cp Unaligned/*fastq.gz $resultsPath\n";
+#print "cp -r Unaligned/fastqc $resultsPath\n";
+#print "mail -s $flowcell.nextseq.postrun.done mcm\@stowers.org </dev/null\n";
+
+sub revcompl
+{
+	my ($dna) = @_;
+	my $revcomp = reverse($dna);
+	$revcomp =~ tr/ACGTacgt/TGCAtgca/;
+	return $revcomp;
 }

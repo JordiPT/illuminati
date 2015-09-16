@@ -33,8 +33,8 @@ module Illuminati
   class NextSeqPostRunnerCluster
     attr_reader :flowcell
     attr_reader :options
-    ALL_STEPS = %w{fastqc distribution report lims_upload}
-    DEFAULT_STEPS = %w{fastqc distribution report lims_upload}
+    ALL_STEPS = %w{fastqc distribution_bylane distribution_all report lims_upload}
+    DEFAULT_STEPS = %w{distribution_bylane report lims_upload}
 
 
     #
@@ -211,7 +211,7 @@ module Illuminati
         system("mkdir -p #{full_distribution_path}")
         unless @options[:only_distribute]
           log "# fastqc waiting on: #{wait_on_task}"
-          fastqc_task = parallel_run_fastqc @flowcell.paths.unaligned_dir, wait_on_task, distributions
+          fastqc_task = parallel_run_fastqc @flowcell.paths.fastq_combine_dir, wait_on_task, distributions
         end
 
         wait_on_task = fastqc_task
@@ -221,7 +221,7 @@ module Illuminati
       end
 
 
-      if steps.include? "distribution"
+      if steps.include? "distribution_bylane"
         fastq_distribution_task = parallel_distribute_fastq "fastq", distributions, @flowcell.paths.unaligned_dir
 
         wait_on_task = fastq_distribution_task
@@ -230,6 +230,19 @@ module Illuminati
 
 
       end
+
+
+      if steps.include? "distribution_all"
+        #puts @flowcell.paths.fastq_combine_dir
+        fastq_distribution_task = parallel_distribute_fastq "fastq", distributions, @flowcell.paths.fastq_combine_dir, "all"
+
+        wait_on_task = fastq_distribution_task
+        log "wait_on_task: #{fastq_distribution_task}"
+        #submit_one("fastq", "email", wait_on_task, "FASTQ", @flowcell.paths.id)
+
+
+      end
+
 
       if steps.include? "report"
         nextseq_create_sample_report @flowcell.paths.base_dir, distributions
@@ -284,70 +297,107 @@ module Illuminati
 
 
     def parallel_distribute_fastq prefix, distributions, full_source_paths, dependency = nil
+      puts dependency
       database = []
       fastq_files = Dir.glob(File.join(full_source_paths, "*.fastq.gz"))
       # puts fastq_files
-      fastq_file_data = get_file_data fastq_files, "\.fastq\.gz"
+      fastq_file_data = get_file_data fastq_files, "\.fastq\.gz", dependency
+
+      #puts fastq_file_data
 
       distribution_single = [distributions].flatten
       full_source_paths_single = [full_source_paths].flatten
 
-      distributions.each do |distributions|
-        log "# Creating directory #{distributions[:path]}"
-        execute "mkdir -p #{distributions[:path]}"
-
+      if dependency == "all"
         fastq_file_data.each do |fastq_file_data|
-          if distributions[:lane].to_i == fastq_file_data[:lane].to_i
-            #rename fastq files when cp
-            #if(fastq_file_data[:library]=="Undetermined")
-            #  fastq_newname = "#{distributions[:path]}n_#{fastq_file_data[:lane]}_#{fastq_file_data[:replicates]}_Undetermined.fastq.gz"
-            #else
-            #  fastq_library,fastq_barcode=fastq_file_data[:library].split(/-/)
-            #  fastq_newname = "#{distributions[:path]}n_#{fastq_file_data[:lane]}_#{fastq_file_data[:replicates]}_#{fastq_barcode}.fastq.gz"
-            #end
-           #entry = {:input => fastq_file_data[:path], :output => fastq_newname, :recursive => false}
-
-            entry = {:input => fastq_file_data[:path], :output => distributions[:path], :recursive => false}
-           database << entry
-          end
+          entry = {:input => fastq_file_data[:path], :output => distribution_single[0][:path], :recursive => false}
+          database << entry
         end
-      end
 
-      if database==[]
-        puts "# Wrong mapping, copy file using single thread"
-        full_source_paths_single.each do |full_source_paths_single|
-          next unless check_exists(full_source_paths_single)
-          already_distributed = []
-          source_path = File.basename(full_source_paths_single)
+      else
 
-          distribution_single.each do |distribution_single|
-            full_source_paths_single = File.join(distribution_single[:path], source_path)
-            unless already_distributed.include? full_source_paths_single
-              already_distributed << full_source_paths_single
-              distribution_dir = File.dirname(full_source_paths_single)
-              execute "mkdir -p #{distribution_dir}" unless File.exists? distribution_dir
-              if File.directory? full_source_paths_single
-                log "# Creating directory #{full_source_paths_single}"
-                execute "mkdir -p #{full_source_paths_single}"
-              end
-              database << {:input => full_source_paths_single, :output => distribution_dir, :recursive => true}
+        distributions.each do |distributions|
+          distributions[:path] = "#{distributions[:path]}bylane_fastq"
+          log "# Creating directory #{distributions[:path]}"
+          execute "mkdir -p #{distributions[:path]}"
+
+          fastq_file_data.each do |fastq_file_data|
+            if distributions[:lane].to_i == fastq_file_data[:lane].to_i
+              #rename fastq files when cp
+              #if(fastq_file_data[:library]=="Undetermined")
+              #  fastq_newname = "#{distributions[:path]}n_#{fastq_file_data[:lane]}_#{fastq_file_data[:replicates]}_Undetermined.fastq.gz"
+              #else
+              #  fastq_library,fastq_barcode=fastq_file_data[:library].split(/-/)
+              #  fastq_newname = "#{distributions[:path]}n_#{fastq_file_data[:lane]}_#{fastq_file_data[:replicates]}_#{fastq_barcode}.fastq.gz"
+              #end
+              #entry = {:input => fastq_file_data[:path], :output => fastq_newname, :recursive => false}
+
+              entry = {:input => fastq_file_data[:path], :output => distributions[:path], :recursive => false}
+
+              database << entry
+
             end
           end
-        end
 
+          if database==[]
+            puts "# Wrong mapping, copy file using single thread"
+            full_source_paths_single.each do |full_source_paths_single|
+              next unless check_exists(full_source_paths_single)
+              already_distributed = []
+              source_path = File.basename(full_source_paths_single)
+
+              distribution_single.each do |distribution_single|
+                full_source_paths_single = File.join(distribution_single[:path], source_path)
+                unless already_distributed.include? full_source_paths_single
+                  already_distributed << full_source_paths_single
+                  distribution_dir = File.dirname(full_source_paths_single)
+                  execute "mkdir -p #{distribution_dir}" unless File.exists? distribution_dir
+                  if File.directory? full_source_paths_single
+                    log "# Creating directory #{full_source_paths_single}"
+                    execute "mkdir -p #{full_source_paths_single}"
+                  end
+                  database << {:input => full_source_paths_single, :output => distribution_dir, :recursive => true}
+                end
+              end
+            end
+
+          end
+        end
       end
 
       #puts database
+
     task_id = submit_parallel(prefix, "cp_files", database, false, true)
     task_id
+
     end
 
 
-    def get_file_data files, suffix_pattern = "\.fastq\.gz"
+    def get_file_data files, suffix_pattern = "\.fastq\.gz",dependency=nil
       files = [files].flatten
 
       #$NAME_PATTERN = /(.*)_([ATCGN-]+|NoIndex|Undetermined)_L(\d{3})_R(\d)_(\d{3})#{suffix_pattern}/
-      $NAME_PATTERN = /(n)_(\d)_(\d)_([ATCGN-]+|NoIndex|Undetermined)#{suffix_pattern}/
+
+
+      if dependency == "all"
+        $NAME_PATTERN = /(n)_(\d)_([ATCGN-]+|NoIndex|Undetermined)#{suffix_pattern}/
+        file_data = files.collect do |file|
+          base_name = File.basename(file)
+          match = base_name =~ $NAME_PATTERN
+          raise "ERROR: #{file} does not match expected file name pattern" unless match
+          data = {:lane => "nextseq", :path => file}
+          data
+        end
+      else
+        $NAME_PATTERN = /(n)_(\d)_(\d)_([ATCGN-]+|NoIndex|Undetermined)#{suffix_pattern}/
+        file_data = files.collect do |file|
+          base_name = File.basename(file)
+          match = base_name =~ $NAME_PATTERN
+          raise "ERROR: #{file} does not match expected file name pattern" unless match
+          data = {:lane => $2.to_i, :path => file}
+          data
+        end
+      end
       # 1_ACTTGA_ACTTGA_L001_R1_002.fastq.gz
       # $1 = "1_ACTTGA"
       # $2 = "ACTTGA"
@@ -355,14 +405,7 @@ module Illuminati
       # $4 = "1"
       # $5 = "002"
 
-      file_data = files.collect do |file|
-        base_name = File.basename(file)
-       match = base_name =~ $NAME_PATTERN
-       raise "ERROR: #{file} does not match expected file name pattern" unless match
-        data = {:lane => $2.to_i, :path => file}
-        data
-      end
-      file_data
+
     end
 
 
@@ -437,17 +480,22 @@ module Illuminati
       status "creating nextseq Sample_Report.csv from bowtie"
 
       unique_distributions = distributions.collect {|d| d[:path]}.uniq
-      #puts unique_distributions
+      puts unique_distributions
       cwd = Dir.pwd
 
       if check_exists(report_path)
         bowtie_dir = @flowcell.paths.aligned_bowtie_dir
         execute "cd #{report_path}"
         execute "export PATH=$PATH:/n/local/stage/perlbrew/perlbrew-0.43/perls/perl-5.16.1t/bin/perl"
-        command = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReportGenerator -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
-  
-        execute command
-        execute "qsub -cwd -hold_jid SampleReportGenerator -N copy_report /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp #{report_path}/Sample_Report.csv #{unique_distributions[0]}\""
+        command1 = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReportGenerator1 -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
+        command2 = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReportGenerator2 -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.by_lane.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
+
+        execute command1
+        execute command2
+
+        execute "qsub -cwd -hold_jid SampleReportGenerator1 -N copy_report1 /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp #{report_path}/Sample_Report.csv #{unique_distributions[0]}\""
+        execute "qsub -cwd -hold_jid SampleReportGenerator2 -N copy_report2 /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp #{report_path}/Sample_Report.by_lane.csv #{unique_distributions[0]}bylane_fastq\""
+
       end
       
     end

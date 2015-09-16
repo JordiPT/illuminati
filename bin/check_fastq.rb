@@ -14,6 +14,7 @@ if __FILE__ == $0
   if flowcell_id
     flowcell = Illuminati::FlowcellPaths.new flowcell_id
     fastq_hash = Hash.new
+    barcode_hash = Hash.new
     #puts flowcell.base_dir
     fastq_size = ""
     if type=="nextseq"
@@ -55,9 +56,19 @@ if __FILE__ == $0
             library,barcode1,barcode2 = data_type.split(/-/)
             newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{barcode1}-#{barcode2}.fastq.gz")
 
+            barcode_hash["#{replicates}_#{barcode1}-#{barcode2}"] = library
+
           else
-            library,barcode = data_type.split(/-/)
-            newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{barcode}.fastq.gz")
+            library,barcode,index = data_type.split(/-/)
+
+            if !index
+              newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{barcode}.fastq.gz")
+              barcode_hash["#{replicates}_#{barcode}"] = lane
+            else
+              newname = File.join(flowcell.unaligned_dir,"n_#{lane}_#{replicates}_#{index}.fastq.gz")
+              barcode_hash["#{replicates}_#{index}"] = lane
+            end
+
           end
 
           lane = "Regular_#{lane}"
@@ -73,15 +84,35 @@ if __FILE__ == $0
           fastq_hash[lane] = size
         end
 
+
         if(flag!="rerun")
           #rename fastq files
           command =  "mv #{x} #{newname}"
           puts command
           system command
+
         end
-
-
       end
+
+
+      # for nextseq cat all fastq files by lane
+      system "mkdir -p #{flowcell.fastq_combine_dir}"
+      puts barcode_hash
+
+      barcode_hash.keys.each do |x|
+        if x != nil
+          # puts barcode_hash.values
+          cat_command = "cat #{flowcell.unaligned_dir}/n_*_#{x}.fastq.gz > #{flowcell.fastq_combine_dir}/n_#{x}.fastq.gz"
+          puts cat_command
+          system cat_command
+
+        end
+      end
+     # qsub_command = 'qsub -cwd -hold_jid checkFastq -N distributeAll /n/ngs/tools/pilluminati/assests/wrapper2.sh "/n/ngs/tools/pilluminati/bin/Nextseq_postrun -s distribution_all H3L3MAFXX"'
+     # puts qsub_command
+     # system qsub_command
+
+
 
     elsif type=="hiseq"
       fastq_files_regular = Dir.glob(File.join(flowcell.fastq_combine_dir, "*.fastq.gz"))

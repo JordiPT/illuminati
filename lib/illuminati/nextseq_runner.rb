@@ -152,6 +152,7 @@ module Illuminati
           required_keys = [:job_name,:sge_proc,:path,:bcl2fastq2,:input_dir,:output_dir,:runfolder_dir]
 
 
+
           if options[:type] == :dual
             bcl2script = Illuminati::ScriptPaths.bcl2fastq2_script_dual
           else
@@ -220,8 +221,11 @@ module Illuminati
           check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid #{bcl2fastq2_jobname} /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} nextseq\""
         end
 
+        distribute_all_command = "qsub -cwd -hold_jid checkFastq -N distributeAll /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/Nextseq_postrun #{flowcell_id} -s distribution_all,fastqc\""
+
         if !options[:fake]
           script.write check_fastq_command
+          script.write distribute_all_command
         end
 
 
