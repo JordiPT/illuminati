@@ -65,7 +65,7 @@ module Illuminati
       if type=="nextseq"
         @nextseq_sample_report = ""
         if @flowcell.paths.base_dir
-          @nextseq_sample_report = File.join(@flowcell.paths.base_dir,"Sample_Report.csv")
+          @nextseq_sample_report = File.join(@flowcell.paths.base_dir,"Sample_Report.by_lane.csv")
           #puts @nextseq_sample_report.inspect
         else
           puts "ERROR: No Sample Report found under directory #{@flowcell.paths.base_dir}"

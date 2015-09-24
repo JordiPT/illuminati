@@ -165,6 +165,10 @@ module Illuminati
         distributions = @flowcell.external_data.distributions_for @flowcell.id
       end
 
+      if @options[:lanes]
+        lanes = @options[:lanes]
+      end
+
       log "# #{distributions.join(",")}"
 
       if distributions.empty?
@@ -211,7 +215,7 @@ module Illuminati
         fastqc_task = nil
         unless @options[:only_distribute]
           log "fastqc waiting on: #{wait_on_task}"
-          fastqc_task = parallel_run_fastqc @flowcell.paths.fastq_combine_dir, wait_on_task, distributions
+          fastqc_task = parallel_run_fastqc @flowcell.paths.fastq_combine_dir, wait_on_task, distributions, lanes
         end
         # wait_on_task = parallel_distribute_to_unique "fastqc", distributions, @flowcell.paths.fastqc_dir, fastqc_task
         # log "wait_on_task: #{wait_on_task}"
@@ -228,12 +232,12 @@ module Illuminati
 
       if steps.include? "stats"
         create_custom_stats_files
-        distribute_custom_stats_files distributions
+        distribute_custom_stats_files distributions, lanes
       end
 
       if steps.include? "report"
-        create_sample_report
-        distribute_sample_report distributions
+        #create_sample_report
+        distribute_sample_report distributions, lanes
       end
 
       if steps.include? "qcdata"
@@ -399,9 +403,9 @@ module Illuminati
     #
     # Distriubutes Sample_Report.csv to project directories
     #
-    def distribute_sample_report distributions
+    def distribute_sample_report distributions,lanes=nil
       status "distributing sample_report"
-      distribute_to_unique distributions, @flowcell.paths.sample_report_path
+      distribute_to_unique distributions, @flowcell.paths.sample_report_path, lanes
     end
 
     #
@@ -507,9 +511,9 @@ module Illuminati
       end
     end
 
-    def distribute_custom_stats_files distribution
+    def distribute_custom_stats_files distribution,lanes=nil
       status "distributing aligned stats files"
-      distribute_to_unique distribution, @flowcell.paths.custom_stats_dir
+      distribute_to_unique distribution, @flowcell.paths.custom_stats_dir, lanes
     end
 
     #
@@ -626,7 +630,8 @@ module Illuminati
     # but ensures this process only occurs once to avoid copying to the same
     # project directory mulitiple times.
     #
-    def distribute_to_unique distributions, full_source_paths
+    def distribute_to_unique distributions, full_source_paths, lanes=nil
+
       distributions = [distributions].flatten
       full_source_paths = [full_source_paths].flatten
       full_source_paths.each do |full_source_path|
@@ -635,20 +640,46 @@ module Illuminati
           source_path = File.basename(full_source_path)
 
           distributions.each do |distribution|
-            full_distribution_path = File.join(distribution[:path], source_path)
-            unless already_distributed.include? full_distribution_path
-              already_distributed << full_distribution_path
 
-              distribution_dir = File.dirname(full_distribution_path)
-              execute "mkdir -p #{distribution_dir}" unless File.exists? distribution_dir
+            if lanes !=nil
+              lanes.each do |lane|
+                if distribution[:lane] == lane
+                  full_distribution_path = File.join(distribution[:path], source_path)
 
-              if File.directory? full_source_path
-                log "# Creating directory #{full_distribution_path}"
-                execute "mkdir -p #{full_distribution_path}"
+                  unless already_distributed.include? full_distribution_path
+                    already_distributed << full_distribution_path
+
+                    distribution_dir = File.dirname(full_distribution_path)
+                    execute "mkdir -p #{distribution_dir}" unless File.exists? distribution_dir
+
+                    if File.directory? full_source_path
+                      log "# Creating directory #{full_distribution_path}"
+                      execute "mkdir -p #{full_distribution_path}"
+                    end
+                    command = "cp -r #{full_source_path} #{distribution_dir}"
+                    execute command
+                  end
+                end
               end
-              command = "cp -r #{full_source_path} #{distribution_dir}"
-              execute command
+
+            else
+              full_distribution_path = File.join(distribution[:path], source_path)
+
+              unless already_distributed.include? full_distribution_path
+                already_distributed << full_distribution_path
+
+                distribution_dir = File.dirname(full_distribution_path)
+                execute "mkdir -p #{distribution_dir}" unless File.exists? distribution_dir
+
+                if File.directory? full_source_path
+                  log "# Creating directory #{full_distribution_path}"
+                  execute "mkdir -p #{full_distribution_path}"
+                end
+                command = "cp -r #{full_source_path} #{distribution_dir}"
+                execute command
+              end
             end
+
           end
         end
       end
@@ -705,11 +736,25 @@ module Illuminati
       end
     end
 
-    def create_fastqc_database fastq_path, distributions
+    def create_fastqc_database fastq_path, distributions, lanes=nil
       output_filename = File.join(fastq_path, "fastqc", "fastqc_starting_data.json")
       system("mkdir -p #{File.dirname(output_filename)}")
       database = {}
-      unique_distributions = distributions.collect {|d| d[:path]}.uniq
+      puts distributions
+
+      if lanes !=nil
+        unique_distributions=[]
+        distributions.each do |distribution|
+          lanes.each do |lane|
+            if distribution[:lane] == lane
+              unique_distributions << distribution[:path]
+            end
+          end
+        end
+        unique_distributions = unique_distributions.uniq
+      else
+        unique_distributions = distributions.collect {|d| d[:path]}.uniq
+      end
 
       database["flowcell_id"] = @flowcell.paths.id
       unless unique_distributions.empty?
@@ -727,12 +772,12 @@ module Illuminati
     # Runs fastqc on all relevant files in fastq_path
     # output is genearted fastq_path/fastqc
     #
-    def parallel_run_fastqc fastq_path, dependency = nil, distributions = []
+    def parallel_run_fastqc fastq_path, dependency = nil, distributions = [], lanes=nil
       status "running fastqc"
       prefix = "fastqc"
       cwd = Dir.pwd
       task_name = nil
-      output_filename = create_fastqc_database(fastq_path, distributions)
+      output_filename = create_fastqc_database(fastq_path, distributions, lanes)
       if check_exists(fastq_path)
         task_name = submit_one(prefix, "fastqc", dependency, "#{fastq_path} #{output_filename}")
       end

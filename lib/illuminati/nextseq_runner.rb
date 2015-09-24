@@ -221,7 +221,7 @@ module Illuminati
           check_fastq_command = "qsub -cwd -v PATH -N checkFastq -hold_jid #{bcl2fastq2_jobname} /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} nextseq\""
         end
 
-        distribute_all_command = "qsub -cwd -hold_jid checkFastq -N distributeAll /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/Nextseq_postrun #{flowcell_id} -s distribution_all,fastqc\""
+        distribute_all_command = "qsub -cwd -v PATH -N distributeAll -hold_jid checkFastq  /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/Nextseq_postrun #{flowcell_id} -s distribution_all\""
 
         if !options[:fake]
           script.write check_fastq_command

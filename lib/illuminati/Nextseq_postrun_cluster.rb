@@ -34,7 +34,7 @@ module Illuminati
     attr_reader :flowcell
     attr_reader :options
     ALL_STEPS = %w{fastqc distribution_bylane distribution_all report lims_upload}
-    DEFAULT_STEPS = %w{distribution_bylane report lims_upload}
+    DEFAULT_STEPS = %w{fastqc distribution_bylane report lims_upload}
 
 
     #
@@ -487,14 +487,14 @@ module Illuminati
         bowtie_dir = @flowcell.paths.aligned_bowtie_dir
         execute "cd #{report_path}"
         execute "export PATH=$PATH:/n/local/stage/perlbrew/perlbrew-0.43/perls/perl-5.16.1t/bin/perl"
-        command1 = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReportGenerator1 -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
-        command2 = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReportGenerator2 -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.by_lane.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
+        command1 = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReport1Generator -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
+        command2 = "qsub -cwd -hold_jid \"fastqc*\" -N SampleReport2Generator -v PATH /n/ngs/tools/pilluminati/assests/wrapper2.sh \"perl /n/ngs/tools/pilluminati/scripts/nextseq_sample_report.by_lane.pl -f #{@flowcell.id} -b #{bowtie_dir} -d #{bowtie_dir} -w #{report_path}\""
 
         execute command1
         execute command2
 
-        execute "qsub -cwd -hold_jid SampleReportGenerator1 -N copy_report1 /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp #{report_path}/Sample_Report.csv #{unique_distributions[0]}\""
-        execute "qsub -cwd -hold_jid SampleReportGenerator2 -N copy_report2 /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp #{report_path}/Sample_Report.by_lane.csv #{unique_distributions[0]}bylane_fastq\""
+        execute "qsub -cwd -hold_jid SampleReport1Generator -N copy1_report /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp  #{report_path}/Sample_Report.csv  #{unique_distributions[0]}\""
+        execute "qsub -cwd -hold_jid SampleReport2Generator -N copy2_report /n/ngs/tools/pilluminati/assests/wrapper2.sh \"cp  #{report_path}/Sample_Report.by_lane.csv  #{unique_distributions[0]}/bylane_fastq\""
 
       end
       
