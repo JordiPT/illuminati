@@ -125,7 +125,13 @@ module Illuminati
           command = "cp #{ALIGN_SCRIPT_ORIGIN} #{local_align_script_path}"
           execute command
 
-          post_command = "#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} > post_run.out 2>&1"
+          postrun_options = "-s undetermined,fastqc,stats,report,lims_upload"
+
+          if options[:lanes]
+            lane_options = "--lanes #{options[:lanes].collect{|s| s.to_i}.join(",")}"
+          end
+
+          post_command = "#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} #{postrun_options} #{lane_options} > post_run.out 2>&1"
           command = "cd #{flowcell.aligned_dir};"
           # command += " qsub -cwd -v PATH -pe make #{NUM_PROCESSES} #{local_align_script_path} \\"#{post_command}\\""
           # command += " qsub -cwd -v PATH -pe make #{NUM_PROCESSES/2} #{local_align_script_path}"
@@ -137,6 +143,7 @@ module Illuminati
           else
             puts "NOT PERFORMING POSTRUN"
           end
+
           if !options[:fake]
             execute command
           end
@@ -159,6 +166,7 @@ if __FILE__ == $0
   options[:fake] = false
   options[:force] = false
   options[:config] = nil
+  options[:lanes] = false
 
   opts = OptionParser.new do |o|
     o.banner = "Usage: align_runner.rb [Flowcell Id] [options]"
@@ -167,7 +175,7 @@ if __FILE__ == $0
     o.on('--fake', 'Do not execute last step') {|b| options[:fake] = true}
     o.on('--force', 'Overwrite Aligned Directory') {|b| options[:force] = true}
     o.on('--config CONFIG_FILE', 'manually specify config.txt file') {|b| options[:config] = File.expand_path(b)}
-
+    o.on("--lanes 1,2,3,4,5,6,7,8" , Array, 'Specify which lanes should be run') {|b| options[:lanes] = b}
     o.on('-y', '--yaml YAML_FILE', String, "Yaml configuration file that can be used to load options.","Command line options will trump yaml options") {|b| options.merge!(Hash[YAML::load(open(b)).map {|k,v| [k.to_sym, v]}]) }
     o.on('-h', '--help', 'Displays help screen, then exits') {puts o; exit}
   end

@@ -126,6 +126,7 @@ for(my $i = 0; $i <= $#t; $i++)
 	$isControl = $decoded->{'samples'}[$i]->{'isControl'};
 	$orderType = $decoded->{'samples'}[$i]->{'orderType'};
 	$readType = $decoded->{'samples'}[$i]->{'readType'};
+	$readLength = $decoded->{'samples'}[$i]->{'readLength'};
 	$sampleName = $decoded->{'samples'}[$i]->{'sampleName'};
 	$indexSequences0 = $decoded->{'samples'}[$i]->{'indexSequences'}[0];
 	$indexSequences1 = $decoded->{'samples'}[$i]->{'indexSequences'}[1];
@@ -135,6 +136,10 @@ for(my $i = 0; $i <= $#t; $i++)
 	$genomeVersion = $decoded->{'samples'}[$i]->{'genomeVersion'};
 	$reqLabName = $decoded->{'samples'}[$i]->{'reqLabName'};
 	$resultsPath = $decoded->{'samples'}[$i]->{'resultsPath'};
+
+	$readLength =~ s/bp$//g;
+	$readLength =~ s/.*-//g;
+	$readLength = $readLength+1;
 	
 	if($laneID == 1)
 	{
@@ -153,11 +158,11 @@ for(my $i = 0; $i <= $#t; $i++)
 
 			if($k =~ /^n_\d_$indexSequences0-$indexSequences1/)
 			{
-				print REPORT "$k,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$k}{'total_sequences'},$bwt_err{$k}{'total_sequences'},100.00,$bwt_err{$k}{'align_percent'},paired,$bwt_err{$k}{'sequence_length'}\n";
+				print REPORT "$k.fastq.gz,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$k}{'total_sequences'},$bwt_err{$k}{'total_sequences'},100.00,$bwt_err{$k}{'align_percent'},paired,$readLength\n";
 			}
-			elsif($k =~ /^n_\d_$indexSequences0/)
+			elsif($k =~ /^n_\d_$indexSequences0$/)
 			{
-				print REPORT "$k,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$k}{'total_sequences'},$bwt_err{$k}{'total_sequences'},100.00,$bwt_err{$k}{'align_percent'},paired,$bwt_err{$k}{'sequence_length'}\n";
+				print REPORT "$k.fastq.gz,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$k}{'total_sequences'},$bwt_err{$k}{'total_sequences'},100.00,$bwt_err{$k}{'align_percent'},paired,$readLength\n";
 			}
 		}
 	}

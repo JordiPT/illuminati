@@ -106,12 +106,9 @@ if __FILE__ == $0
           puts cat_command
           system cat_command
 
+
         end
       end
-     # qsub_command = 'qsub -cwd -hold_jid checkFastq -N distributeAll /n/ngs/tools/pilluminati/assests/wrapper2.sh "/n/ngs/tools/pilluminati/bin/Nextseq_postrun -s distribution_all H3L3MAFXX"'
-     # puts qsub_command
-     # system qsub_command
-
 
 
     elsif type=="hiseq"

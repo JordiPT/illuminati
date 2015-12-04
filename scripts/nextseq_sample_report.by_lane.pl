@@ -38,21 +38,7 @@ my %bwt_err = ();
 
 
 #ugly hack to get sequence length and number of sequences - mainly for when there's no bowtie results.
-`find $base_dir/Unaligned/all/fastqc -name "fastqc_data.txt" | xargs grep "Sequence length" > $base_dir/sequence_length.txt`;
 `find $base_dir/Unaligned/all/fastqc -name "fastqc_data.txt" | xargs grep "Total Sequences" > $base_dir/total_sequences.txt`;
-
-open(seqlength,"$base_dir/sequence_length.txt") or die $!;
-while(<seqlength>)
-{
-	chomp;
-	($firstpart,$seqlengthpart) = split(":",$_);
-	($dirname,@junk) = split("_fastqc",$firstpart);
-	$dirname =~ s/^.*\///g;
-	$seqlength = $seqlengthpart;
-	$seqlength =~ s/^Sequence\slength\s//g;
-	$seqlength =~ s/\t+//g;
-	$bwt_err{$dirname}{"sequence_length"} = $seqlength;
-}
 
 open(totalseq,"$base_dir/total_sequences.txt") or die $!;
 while(<totalseq>)
@@ -128,6 +114,7 @@ for(my $i = 0; $i <= $#t; $i++)
 	$isControl = $decoded->{'samples'}[$i]->{'isControl'};
 	$orderType = $decoded->{'samples'}[$i]->{'orderType'};
 	$readType = $decoded->{'samples'}[$i]->{'readType'};
+	$readLength = $decoded->{'samples'}[$i]->{'readLength'};
 	$sampleName = $decoded->{'samples'}[$i]->{'sampleName'};
 	$laneID = $decoded->{'samples'}[$i]->{'laneID'};
 	$indexSequences0 = $decoded->{'samples'}[$i]->{'indexSequences'}[0];
@@ -138,6 +125,10 @@ for(my $i = 0; $i <= $#t; $i++)
 	$genomeVersion = $decoded->{'samples'}[$i]->{'genomeVersion'};
 	$reqLabName = $decoded->{'samples'}[$i]->{'reqLabName'};
 	$resultsPath = $decoded->{'samples'}[$i]->{'resultsPath'};
+
+	$readLength =~ s/bp$//g;
+	$readLength =~ s/.*-//g;
+	$readLength = $readLength+1;
 
 	print "lane:$laneID\nisControl:$isControl\nindex:$indexSequences0\nindex:$indexSequences1\n";
 
@@ -167,19 +158,19 @@ for(my $i = 0; $i <= $#t; $i++)
 		{
 			if($current_bamfile =~ /^n_$laneID.*/)
 			{
-				print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
-				print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+				print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,$readLength\n";
+				print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,$readLength\n";
 			}
 		}
 		elsif($current_bamfile =~ /^n_$laneID.*/ and $current_bamfile =~ /.*$indexSequences0.bam/)
 		{
-			print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
-			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+			print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,$readLength\n";
+			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,$readLength\n";
 		}
 		elsif($current_bamfile =~ /^n_$laneID.*/ and $current_bamfile =~ /.*$indexSequences0-$indexSequences1.*/)
 		{
-			print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
-			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_sequences'},$bwt_err{$modname}{'total_sequences'},100.00,$bwt_err{$modname}{'align_percent'},paired,$bwt_err{$modname}{'sequence_length'}\n";
+			print "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,$readLength\n";
+			print REPORT "$modname1,$prnOrderNo,$orderType,$laneID,$sampleName,$libID,$indexSequences0,$indexSequences1,$read,$genomeVersion,$reqLabName,$bwt_err{$modname}{'total_reads'},$bwt_err{$modname}{'total_reads'},100.00,$bwt_err{$modname}{'align_percent'},paired,$readLength\n";
 		}
 	}
 }

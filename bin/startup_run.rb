@@ -129,6 +129,10 @@ module Illuminati
         command += " --use-bases-mask Y*,I*,I*,Y*"
       end
 
+      if @options[:type] == :singleAd
+        command += " --use-bases-mask Y*,I6n*,n*"
+      end
+
       script.write command
       script.write ""
 
@@ -151,52 +155,68 @@ module Illuminati
 
       if !@options[:fake]
 
-        #command = "qsub -cwd -v PATH #{local_bcl2fastq_script_path}"
+        command = "qsub -cwd -N bcl2fastq -v PATH #{local_bcl2fastq_script_path}"
 
-        #if @options[:align]
-        #  align_options = @options[:postrun] ? "" : "--no-postrun"
-        #  align_command = "#{ALIGN_SCRIPT} #{flowcell.flowcell_id} #{align_options} > run_align.out 2>&1"
-        #  command += "  \"#{align_command}\""
-        #else
+        if options[:lanes] != "1,2,3,4,5,6,7,8"
+          lane_options = "--lanes #{options[:lanes]}"
+        end
 
-         #if !@options[:postrun]
-         #  postrun_options = "--no-postrun"
-         #else
-         #  postrun_options = "-s unaligned,undetermined,fastqc,stats,report,lims_upload"
-         #end
+        if @options[:align]
+          align_options = @options[:postrun] ? "" : "--no-postrun"
 
-         #   postrun_command = "#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} #{postrun_options} > run_postrun.out 2>&1"
-         #   command += "  \"#{postrun_command}\""
+          align_command = "#{ALIGN_SCRIPT} #{flowcell.flowcell_id} #{align_options} #{lane_options} > run_align.out 2>&1"
+          command += "  \"#{align_command}\""
 
-        #end
-         # script.write command
+          script.write command
+          script.write ""
+
+          path_command = "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
+          script.write path_command
+          script.write ""
+
+          fastq_command = "qsub -cwd -v PATH -N catFastq -hold_jid bcl2fastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} -s unaligned  > run_postrun.out 2>&1\""
+          script.write fastq_command
+          script.write ""
+        else
+
+          script.write command
+          script.write ""
+
+          path_command = "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
+          script.write path_command
+          script.write ""
+
+          fastq_command = "qsub -cwd -v PATH -N catFastq -hold_jid bcl2fastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} -s unaligned,undetermined,fastqc,stats,report,lims_upload #{lane_options} > run_postrun.out 2>&1\""
+          script.write fastq_command
+          script.write ""
+
+        end
 
 
+=begin
         command = "qsub -cwd -v PATH -N bcl2fastq #{local_bcl2fastq_script_path}"
         script.write command
         script.write ""
 
 
-        path_command = "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
-        script.write path_command
-        script.write ""
-
-        fastq_command = "qsub -cwd -v PATH -N catFastq -hold_jid bcl2fastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} -s unaligned  > run_postrun.out 2>&1\""
-        script.write fastq_command
-        script.write ""
 
         if @options[:align]
-          align_command = "qsub -cwd -v PATH -N casavaAlign -hold_jid catFastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{ALIGN_SCRIPT} #{flowcell.flowcell_id} --no-postrun > run_align.out 2>&1\""
+          align_command = "qsub -cwd -v PATH -N eland -hold_jid bcl2fastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{ALIGN_SCRIPT} #{flowcell.flowcell_id} --no-postrun > run_align.out 2>&1\""
           script.write align_command
           script.write ""
         end
 
+
         if @options[:postrun]
-          postrun_options = "-s undetermined,fastqc,stats,report,lims_upload --lanes #{@options[:lanes]}"
-          postrun_command = "qsub -cwd -v PATH -N postrun -hold_jid casavaAlign /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} #{postrun_options} > run_postrun.out 2>&1\""
+          postrun_options = "-s undetermined,fastqc,stats,report,lims_upload"
+          if @options[:lanes] != "1,2,3,4,5,6,7,8"
+            lane_options = "--lanes #{@options[:lanes]}"
+          end
+          postrun_command = "qsub -cwd -v PATH -N postrun -hold_jid \"eland*\" /n/ngs/tools/pilluminati/assests/wrapper2.sh \"#{POSTRUN_SCRIPT} #{flowcell.flowcell_id} #{postrun_options} #{lane_options} > run_postrun.out 2>&1\""
           script.write postrun_command
         end
       end
+=end
      # script.write "export PATH=$PATH:/n/local/stage/rbenv/rbenv-0.3.0/shims/ruby"
      # script.write ""
      # check_fastq_command = "qsub -cwd -hold_jid hiseq_bcl2fastq -v PATH -N checkFastq /n/ngs/tools/pilluminati/assests/wrapper2.sh \"/n/ngs/tools/pilluminati/bin/check_fastq.rb #{flowcell_id} hiseq\""
@@ -207,7 +227,8 @@ module Illuminati
         #script.write "# after complete, run this command and paste results to wiki page"
         #script.write "# fc_info #{flowcell_id}"
 
-      script.close
+       script.close
+        end
     end
   end
 end
@@ -227,6 +248,7 @@ if __FILE__ == $0
   opts = OptionParser.new do |o|
     o.banner = "Usage: startup_run.rb [Flowcell Id] [options]"
     o.on('-d', '--dual', 'Flowcell is dual indexed') {|b| options[:type] = :dual}
+    o.on('-s', '--singleAsdual', 'Flowcell is dual indexed') {|b| options[:type] = :singleAd}
     o.on( '--no-align', 'Disable the align step, do post_run with non-alignment steps') {|b| options[:align] = false}
     o.on( '--no-postrun', 'Disable the postrun step') {|b| options[:postrun] = false}
     o.on( '--no-sample_sheet', 'Disable the samplesheet step') {|b| options[:create_sample_sheet] = false}

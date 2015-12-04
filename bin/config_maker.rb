@@ -55,6 +55,7 @@ module Illuminati
     end
 
     sample_sheet_data = flowcell.to_sample_sheet options[:lanes]
+    puts sample_sheet_data
     if sample_sheet_output_file
       File.open(sample_sheet_output_file, 'w') do |file|
         file << sample_sheet_data
