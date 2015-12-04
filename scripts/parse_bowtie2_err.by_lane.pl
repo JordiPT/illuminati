@@ -64,5 +64,5 @@ foreach my $file (@files)
 print "sample\tprocessed\taligned_once\tpct_aligned_once\tfailed\tpct_failed\taligned_multi\tpct_multi\ttotal_aligned\tpct_aligned\n";
 foreach my $f (sort {ncmp($a,$b)} keys %h)
 {
-	print "$h{$f}{bam_file}\t$h{$f}{proc}\t$h{$f}{aligned}\t$h{$f}{pct_aligned}\t$h{$f}{failed}\t$h{$f}{pct_failed}\t$h{$f}{multi}\t$h{$f}{pct_multi}\t$h{$f}{total_aligned}\t$h{$f}{pct_aligned}\n";
+	print "$h{$f}{bam_file}\t$h{$f}{proc}\t$h{$f}{aligned}\t$h{$f}{pct_aligned}\t$h{$f}{failed}\t$h{$f}{pct_failed}\t$h{$f}{multi}\t$h{$f}{pct_multi}\t$h{$f}{total_aligned}\t$h{$f}{pct_overall}\n";
 }
